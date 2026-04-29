@@ -73,6 +73,7 @@ app.get('/api/partite', async (req, res) => {
         
         // Richiesta a Supabase delle partite a seconda della data
         // Join implicito tra il nome delle squadre e il nome dei giocatori
+        // ---------------- VEDERE COME PRENDERE I GIOCATORI MARCATORI DELLE PARTITE (perche per ora il join tra squadre e giocatori non viene effettuato)  ----------------------------
         const { data, error } = await supabase
             .from('partite')
             .select(`
