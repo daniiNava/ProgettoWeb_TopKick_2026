@@ -57,7 +57,7 @@ onMounted(() => {
 
         <!-- SEZIONE 1: CAROSELLO NOTIZIE-->
         <section class="mb-5">
-            <h2 class="fw-bold mb-3">Ultimate Notizie</h2>  <!-- fw-bold grassetto-->
+            <h2 class="fw-bold mb-3">Ultime Notizie</h2>  <!-- fw-bold grassetto-->
             
             <!--Controllo per migliorare la User Experience-->
             <div v-if="notizie.length > 0" id="newsCarosello" class="carousel slide" data-bs-ride="carousel"> <!--se ci sono notizie, il framework inserisce il blocco del carosello nel DOM-->

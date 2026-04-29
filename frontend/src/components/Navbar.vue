@@ -31,11 +31,15 @@
                 <!--me-auto         spinge tutti gli elementi successivi verso il margine dx-->    
                 <!--mb-2 mb-lg-0    applica un margine inferiore di scala valore 2 tra gli elementi, azzerandolo quando la barra si espande su schermi grandi-->    
                 <!--ms-4            applica un margine sinistro di scala valore 4 (distanzia il link dal logo)-->   
-    
+                    <li class="nav-item">
+                        <RouterLink class="nav-link" to="/notizie">Notizie</RouterLink>
+                    </li>
                     <li class="nav-item">
                         <RouterLink class="nav-link" to="/competizioni">Competizioni</RouterLink>
                     </li>
                 </ul>
+
+                <!-- Da inserire notizie-->>
 
                 <!-- BARRA DI RICERCA -->
                 <form class="d-flex me-3" role="search"> 
