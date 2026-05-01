@@ -226,6 +226,35 @@ app.post('/api/logout', async(req, res) => {
 });
 
 
+
+// ========================================
+//      FASE 6 - /Notizie
+// ========================================
+
+app.get('/api/notizie', async (requestAnimationFrame, res) => {
+    try {
+        //query alla tabella notizie, che tramite join con competizioni(nome) ci da anche il
+        //campionato associato alla notizia
+        const {data,error}= await supabase
+            .from('notizie')
+            .select(`
+                id,
+                titolo,
+                contenuto,
+                img_url,
+                data_pubblicazione,
+                competizioni( nome )
+                `)
+                .order('data_pubblicazione', {ascending: false }); //ordina l'array dalla piu recente alla piu vecchia 
+        if (error) throw error 
+        res.json(data)
+    } catch(err) {
+        console.error("Errore nel recupero di tutte le notizie:", err);
+        res.status(500).json({error: "Errore interno del server"});
+    }
+});
+
+
 // --- AVVIO DEL SERVER ---
 app.listen(PORT, () => {
     console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
