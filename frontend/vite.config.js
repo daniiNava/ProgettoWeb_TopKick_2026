@@ -22,6 +22,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000', // Porta del server Node.js
         changeOrigin: true,
+        secure: false
       }
     }
   }

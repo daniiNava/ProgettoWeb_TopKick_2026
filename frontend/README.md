@@ -36,3 +36,7 @@ npm run dev
 ```sh
 npm run build
 ```
+
+// Sono daniele e non so chi ha scritto quello sopra, comunque
+nella cartella del backend      node index.js
+nella cartella del frontend     npm run dev
