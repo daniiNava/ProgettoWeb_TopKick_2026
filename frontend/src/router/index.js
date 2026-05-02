@@ -6,9 +6,7 @@ import NotizieView from '../views/NotizieView.vue'
 import RisultatiRicercaView from '../views/RisultatiRicercaView.vue'
 //importiamo le componenti 'pagina' che fungono da contenitori principali per un'intera schermata
 
-const router= createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
-    routes: [
+
         {path: '/', name:'home', component: HomeView},
         {path: '/profilo', name:'profilo', component: ProfiloView},
         {path: '/notizie', name:'notizie', component: NotizieView},
