@@ -2,7 +2,7 @@
 // Per ora la Navbar è statica. In futuro qui gestiremo il tema scuro/chiaro e il login
 import { ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'   // Importa Modal da bootstrap per chiuderlo via JS
-
+import {useRouter} from 'vue.router'
 // Variabile per la gestione degli errori
 const errorMessage = ref('')
 
@@ -12,6 +12,7 @@ const isLoginMode = ref(true)   // Variabile per scambiare la vista del popup tr
 
 const isDropdownOpen = ref(false)   // Var. per il controllo del menu a tendina
 
+const router=useRouter()
 // Variabili per i form (stringhe reattive: vengono modificate sia dall'utente che scrive sia se il codice svuota la variabile)
 const loginEmail    = ref('')
 const loginPassword = ref('')
@@ -19,6 +20,8 @@ const regUsername   = ref('')
 const regEmail      = ref('')
 const regPassword   = ref('')
 
+const testoRicerca=ref('')
+const tipoRicerca=ref=('tutto')
 // 1. Funzione che controlla se è presente una SESSIONE ATTIVA
 const checkSession = async () => {
     try {
@@ -129,6 +132,17 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
     checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
 })
 
+//agggiunta funzione di ricerca 
+const eseguiRicerca=()=> {
+    if(testoRicerca.value.trim()!=='') {
+        router.push({
+            path:'/ricerca',
+            query: {q: testoRicerca.value, tipo: tipoRicerca.value}
+        })
+        testoRicerca.value='' //svuota la barra dopo la ricerca 
+        isDropdownOpen.value=false // chiude la tendina del profilo se era aperta 
+    }
+}
 
 </script>
 
@@ -170,10 +184,19 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                 </ul>
 
                 <!-- BARRA DI RICERCA -->
-                <form class="d-flex me-3" role="search"> 
+                <form class="d-flex me-3" role="search" @submit.prevent="eseguiRicerca"> 
+                <!-- @submit.prevent blocca il refresh della pagina e lancia la nostra funzione di ricerca-->
                 <!--d-flex  forza l'elemento ad adottare il modello di layout Flexbox allineando l'input di resto e il pulsante di ricerca-->
-                <!--role="search"   fornisce contesto semantico per le tecnologie assistive-->    
-                    <input class="form-control me-2" type="search" placeholder="Cerca squadra, giocatore..." aria-label="Search">
+                <!--role="search"   fornisce contesto semantico per le tecnologie assistive--> 
+                    <!--costruiamo la tendina per selezionare la categoria di ricerca, collegata a tipoRicerca-->
+                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca">
+                        <option value="tutto">Tutto</option>
+                        <option value="squadre">Squadre</option>
+                        <option value="giocatori">Giocatori </option>
+                        <option value="competizioni">Competizioni</option>
+                        <option value="notizie">Notizie</option>
+                    </select>
+                    <input class="form-control me-2" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" required>
                     <button class="btn btn-outline-success" type="submit">Cerca</button>
                 </form>
 

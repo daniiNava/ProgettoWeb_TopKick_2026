@@ -230,3 +230,59 @@ app.post('/api/logout', async(req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
 });
+
+// ==========================================
+// API RICERCA INTELLIGENTE 
+// ==========================================
+app.get('/api/ricerca', async (req, res) => {
+    //estraimamo i parametri dalle query 
+    const {q, tipo} = req.query;
+    if(!q) {
+        return res.json({squadre: [], giocatori: [], competizioni: [], notizie: []});
+    }
+
+    const searchTeam=`%${q}%`;
+    let risultati= {squadre: [], giocatori: [], competizioni: [], notizie: []};
+
+    try {
+        //cerco nelle squadre
+        if (tipo==='tutto' || tipo==='squadre') {
+            const {data}= await supabase 
+                .from('squadre')
+                .select('id, nome, logo_url')
+                .ilike('nome', searchTerm);
+            risultati.squadre=data || [];
+
+        }
+        //cerco nei giocatori 
+        if (tipo==='tutto' || tipo==='giocatori') {
+            const {data}= await supabase 
+                .from('giocatori')
+                .select('id, nome_cognome, ruolo, squadre(nome)')
+                .ilike('nome_cognome', searchTerm);
+            risultati.giocatori=data || [];
+         }
+         //cerco nelle competizioni
+        if (tipo==='tutto' || tipo==='competizioni') {
+            const {data}= await supabase 
+                .from('competizioni')
+                .select('id, nome, logo_url')
+                .ilike('nome', searchTerm);
+            risultati.competizioni=data || [];
+         }
+
+         //cerco nelle notizie
+         if (tipo==='tutto' || tipo==='notizie') {
+            const {data}= await supabase 
+                .from('notizie')
+                .select('id, titolo data_pubblicazione')
+                .or(`titolo.like.${searchTerm},contenuto.ilike.${searchTerm}`)
+            risultati.notizie=data || [];
+         }
+         res.json(risultati);
+        } catch(err) {
+            console.error("Errore durante la ricerca:", err);
+            res.status(500).json({error: "Errore interno del server durante la ricerca"});
+
+        }
+})
