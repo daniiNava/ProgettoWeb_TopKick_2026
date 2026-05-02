@@ -4,13 +4,17 @@ import HomeView from '../views/HomeView.vue'
 import ProfiloView from '../views/ProfiloView.vue'
 import NotizieView from '../views/NotizieView.vue'
 import RisultatiRicercaView from '../views/RisultatiRicercaView.vue'
+import CompetizioniView from '../views/CompetizioniView.vue'
 //importiamo le componenti 'pagina' che fungono da contenitori principali per un'intera schermata
 
-
+const router=createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
+    routes: [
         {path: '/', name:'home', component: HomeView},
         {path: '/profilo', name:'profilo', component: ProfiloView},
         {path: '/notizie', name:'notizie', component: NotizieView},
-        {path: '/ricerca', name:'ricerca', component: RisultatiRicercaView}
+        {path: '/ricerca', name:'ricerca', component: RisultatiRicercaView},
+        {path: '/competizioni', name:'competizioni', component: CompetizioniView}
     ]
 })
 
