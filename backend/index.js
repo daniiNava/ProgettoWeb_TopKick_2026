@@ -241,7 +241,11 @@ const checkPremium = (req, res, next) => {
     next();
 }
 
+// =============================
 // 7. API PREMIUM: Le mie competizioni
+// =============================
+
+// Prende le Mie Competizioni dell'utente premium
 app.get('/api/mie-competizioni', checkPremium, async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -249,13 +253,67 @@ app.get('/api/mie-competizioni', checkPremium, async (req, res) => {
         .select('*')
         .eq('creato_da', req.session.user.id) // Filtro fondamentale per la sicurezza
         .order('creato_il', { ascending: false })
+
+        if(error) throw error;
+        res.json(data);
     } catch(error){
-        
+        res.status(500).json({ error: "Errore nel recupero delle tue competizioni." });
     }
 })
 
+// Crea una nuova competizione 
+app.post('api/mie-competizioni', checkPremium, async (req, res) => {
+    cost { nome, logo_url, numero_squadre } = req.body;
 
+    if(!nome || !numero_squadre){
+        return res.status(400).json({ error: "Nome e numero squadre sono obbligatori"});
+    }
 
+    try {
+        const { data, error } = await supabase
+        .from('competizioni')
+        .insert([{
+            nome: nome,
+            logo_url: logo_url || null,
+            numero_squadre: numero_squadre,
+            creato_da: re.session.user.id       // Associazione tra la competizione e chi l'ha creata
+        }])
+        .select();
+
+        if(error) throw error;
+        res.status(201).json({ message: "Competizione creata!", competizione: data[0] });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nella creazione della competizione"});
+    }
+})
+
+// Eliminazione di una competizione
+app.delete('api/mie-competizioni', checkPremium, async (req, res) => {
+    cost { nome, logo_url, numero_squadre } = req.body;
+
+    if(!nome || !numero_squadre){
+        return res.status(400).json({ error: "Nome e numero squadre sono obbligatori"});
+    }
+
+    try {
+        const { data, error } = await supabase
+        .from('competizioni')
+        .insert([{
+            nome: nome,
+            logo_url: logo_url || null,
+            numero_squadre: numero_squadre,
+            creato_da: re.session.user.id       // Associazione tra la competizione e chi l'ha creata
+        }])
+        .select();
+
+        if(error) throw error;
+        res.status(201).json({ message: "Competizione creata!", competizione: data[0] });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nella creazione della competizione"});
+    }
+})
 
 // ========================================
 //      FASE 6 - /Notizie
@@ -290,18 +348,19 @@ app.get('/api/notizie/:id', async (req, res) => {
     try {
         const {data, error} = await supabase 
             .from('notizie')
-            .select(
+            .select(`
                 id,
                 titolo,
                 contenuto,
                 img_url,
                 data_pubblicazione,
                 competizioni(nome)
-            )
+            `)
             .eq('id', id) //filtriamo il tutto per id 
             .single() //perche vogliamo un singolo risultato
         if(error) throw error;
         if(!data) return res.status(404).json({error: "Notizia non trovata"});
+        res.json(data);
     } catch (err) {
         console.error("Errore nel recupero della notizia:", err);
         res.status(500).json({error:"Errore interno del server"});

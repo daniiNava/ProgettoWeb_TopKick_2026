@@ -11,7 +11,6 @@ const errore=ref('')
 
 const fetchNotizia= async () => {
     try{
-        //va il backtick in fetch
         const response= await fetch(`/api/notizie/${route.params.id}`)
         if(!response.ok) {
             if(response.status===404) throw new Error ('Notizia non torovata')
