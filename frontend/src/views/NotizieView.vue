@@ -77,7 +77,9 @@ onMounted(()=> {
 
                         <!--bottone che aprira la notiza, mt auto garantisce che il pulsante si trovi in fondo alla pagina
                         e garantisce che tutti i pulsanti della riga siano allineati, indipendentemente dalla lunghezza del titolo-->
-                        <button class=" btn btn-outline-success mt-auto">Leggi di più</button>
+                        <RouterLink :to="'/notizie/'+ notizia.id" class="btn btn-outline-success mt-auto">
+                            Leggi di più
+                        </RouterLink>
 
                     </div>
                     

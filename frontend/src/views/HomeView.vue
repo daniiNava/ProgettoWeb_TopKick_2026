@@ -70,11 +70,13 @@ onMounted(() => {
                     <!--ad ogni iterazione, genera un nodo DOM assegnando l'oggetto corrente alla variabile 'notizia' e la sua posizione nell'array alla variabile 'index'. key fornisce un identificativo univoco-->
                     <!--la classe 'active' viene applicata esclusivamente se la condizione 'index===0' è vera (solo al primo elemento generato)-->    
                         <!--Immagine segnaposto se non c'è img_url-->
-                        <img :src="notizia.img_url || 'https://via.placeholder.com/1200x400?text=TOPKICK+News'" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="News Image"> <!--con l'OR viene fatto un ripiego se img_url è assente, con l'url di un immagine generata dinamicamente a runtime-->
-                        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-75 rounded p-3"> <!--d-none  classe per nascondere un elemento. rounded per arrotondare i bordi-->
-                            <h5>{{  notizia.titolo  }}</h5>     <!-- {testo} serve per inserire il valore testuale di una variabile JS in HTML (interpolazione) -->
-                            <p class="text-truncate">{{  notizia.contenuto  }}</p>
-                        </div>
+                        <RouterLink :to="'/notizie/'+ notizia.id" class="text-decoration-none text-white">
+                            <img :src="notizia.img_url || 'https://via.placeholder.com/1200x400?text=TOPKICK+News'" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="News Image"> <!--con l'OR viene fatto un ripiego se img_url è assente, con l'url di un immagine generata dinamicamente a runtime-->
+                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-75 rounded p-3"> <!--d-none  classe per nascondere un elemento. rounded per arrotondare i bordi-->
+                                <h5>{{  notizia.titolo  }}</h5>     <!-- {testo} serve per inserire il valore testuale di una variabile JS in HTML (interpolazione) -->
+                                <p class="text-truncate">{{  notizia.contenuto  }}</p>
+                            </div>
+                        </RouterLink>    
                     </div>
                 </div>
                 <button class="carousel-control-prev" type="button" data-bs-target="#newsCarosello" data-bs-slide="prev">
