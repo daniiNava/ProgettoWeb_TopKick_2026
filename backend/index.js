@@ -225,6 +225,36 @@ app.post('/api/logout', async(req, res) => {
 
 });
 
+// 5. Api per bloccare chiunque provi a creare una competizione senza essere Premium (Middleware)
+const checkPremium = (req, res, next) => {
+    // Controllo l'utente se è loggato
+    if(!req.session.user){ 
+        return res.status(401).json({ error: "Effettua prima l'accesso." });
+    }
+
+    // Controllo se è premium
+    if(!req.session.ruolo !== 'premium'){ 
+        return res.status(403).json({ error: "Accesso negato. Funzionalità riservata agli utenti Premium." });
+    }
+
+    // Se supera i controlli, procede all'API richiesta (vedere la fase 7)
+    next();
+}
+
+// 7. API PREMIUM: Le mie competizioni
+app.get('/api/mie-competizioni', checkPremium, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+        .from('competizioni')
+        .select('*')
+        .eq('creato_da', req.session.user.id) // Filtro fondamentale per la sicurezza
+        .order('creato_il', { ascending: false })
+    } catch(error){
+        
+    }
+})
+
+
 
 
 // ========================================
@@ -254,17 +284,36 @@ app.get('/api/notizie', async (requestAnimationFrame, res) => {
     }
 });
 
-
-// --- AVVIO DEL SERVER ---
-app.listen(PORT, () => {
-    console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
+// Chiamata per recuperare una singola notizia tramite id (per visualizzare una notizia singolarmente in una pagina a parte)
+app.get('/api/notizie/:id', async (req, res) => {
+    const {id}= req.params; //estraiamo l'id dall'url
+    try {
+        const {data, error} = await supabase 
+            .from('notizie')
+            .select(
+                id,
+                titolo,
+                contenuto,
+                img_url,
+                data_pubblicazione,
+                competizioni(nome)
+            )
+            .eq('id', id) //filtriamo il tutto per id 
+            .single() //perche vogliamo un singolo risultato
+        if(error) throw error;
+        if(!data) return res.status(404).json({error: "Notizia non trovata"});
+    } catch (err) {
+        console.error("Errore nel recupero della notizia:", err);
+        res.status(500).json({error:"Errore interno del server"});
+    }
 });
+
 
 // ==========================================
 // API RICERCA INTELLIGENTE 
 // ==========================================
 
-//diciamo al server -> quando qualcuno ti cerca all'indirizoo /api/ricerca esegui questa funzione, la funzione è async perche faremo operazioni che richiederanno tempo (parlare con database), req contiene la domanda dell'utente e res la risposta del server 
+//diciamo al server -> quando qualcuno ti cerca all'indirizzo /api/ricerca esegui questa funzione, la funzione è async perche faremo operazioni che richiederanno tempo (parlare con database), req contiene la domanda dell'utente e res la risposta del server 
 app.get('/api/ricerca', async (req, res) => {
     //estraimamo i parametri dalle query 
     const {q, tipo} = req.query; //prende l'url e ne estrae la parola cercata q e ne filtra il tipo
@@ -317,3 +366,33 @@ app.get('/api/ricerca', async (req, res) => {
 
         }
 })
+
+
+// ==========================================
+// API COMPETIZIONI 
+// ==========================================
+app.get('/api/competizioni', async (req, res) => {
+    try {
+        const {data, error} = await supabase 
+            .from('competizioni')
+            .select(`
+                id,
+                nome,
+                nazione,
+                logo_url,
+                squadre(id, nome, logo_url)
+            `)
+            .order('nome', {ascending: true});
+        if(error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error("Errore nel recupero competizioni:", err);
+        res.status(500).json({error:"Errore interno del server"});
+    }
+});
+
+
+// --- AVVIO DEL SERVER ---
+app.listen(PORT, () => {
+    console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
+});

@@ -5,6 +5,8 @@ import ProfiloView from '../views/ProfiloView.vue'
 import NotizieView from '../views/NotizieView.vue'
 import RisultatiRicercaView from '../views/RisultatiRicercaView.vue'
 import CompetizioniView from '../views/CompetizioniView.vue'
+import NotiziaDettaglioView from '../views/NotiziaDettaglioView.vue'
+
 //importiamo le componenti 'pagina' che fungono da contenitori principali per un'intera schermata, stiamo caricando nella memoria del file tutte le schermate che abbiamo costruito fisicamente nella cartella views
 
 const router=createRouter({ //creaimo l'oggetto che gestirà i cambi di pagina
@@ -14,7 +16,8 @@ const router=createRouter({ //creaimo l'oggetto che gestirà i cambi di pagina
         {path: '/profilo', name:'profilo', component: ProfiloView},
         {path: '/notizie', name:'notizie', component: NotizieView},
         {path: '/ricerca', name:'ricerca', component: RisultatiRicercaView},
-        {path: '/competizioni', name:'competizioni', component: CompetizioniView}
+        {path: '/competizioni', name:'competizioni', component: CompetizioniView},
+        { path: '/notizie/:id', name: 'notizia-dettaglio', component: NotiziaDettaglioView }
     ] // elenco delle regole, per ogni blocco stiamo indicando -> 1. path -> se l'utente digita eattamentoe quest'indirizzo nell'URL
         // 2 name->  targhetta interna, che facile la gestione dell'arrivo alle rotte 
         // 3 component-> cancella la pagina attuale e stampa a schermo questo specifico file vue

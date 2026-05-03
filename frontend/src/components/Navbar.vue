@@ -2,7 +2,7 @@
 // Per ora la Navbar è statica. In futuro qui gestiremo il tema scuro/chiaro e il login
 import { ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'   // Importa Modal da bootstrap per chiuderlo via JS
-import {useRouter} from 'vue.router'
+import {useRouter} from 'vue-router'
 // Variabile per la gestione degli errori
 const errorMessage = ref('')
 
@@ -20,10 +20,13 @@ const regUsername   = ref('')
 const regEmail      = ref('')
 const regPassword   = ref('')
 
+// Variabili reattive per la barra di ricerca
 const testoRicerca=ref('')
-const tipoRicerca=ref=('tutto')
-const suggerimenti=ref(null) //conterrà i risultati in tempo reale, della ricerca
-let timeoutRicerca=null //serve per il debouncing -> tecnica che coinsiste nell'aspettare che l'utente smetta di digitare per 300ms prima di far partire la chiamata al server senza intasarlo 
+const tipoRicerca=ref('tutto')
+const suggerimenti=ref(null) // conterrà i risultati in tempo reale, della ricerca
+let timeoutRicerca=null // serve per il debouncing -> tecnica che coinsiste nell'aspettare che l'utente smetta di digitare per 100ms prima di far partire la chiamata al server senza intasarlo 
+
+
 // 1. Funzione che controlla se è presente una SESSIONE ATTIVA
 const checkSession = async () => {
     try {
@@ -129,13 +132,7 @@ const toggleDropdown = () => {
     isDropdownOpen.value = !isDropdownOpen.value
 }
 
-// Ciclo di vita
-onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione checkSession nel momento esatto in cui il componente
-    checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
-})
-
-
-
+// BARRA DI RICERCA
 const cercaLive= () => {
     clearTimeout(timeoutRicerca) // cancella il timer precedente se l'utente sta ancora scrivendo 
 
@@ -154,11 +151,11 @@ const cercaLive= () => {
         } catch(error) {
             console.error("Errore live search:", error)
         }
-    }, 300)
+    }, 100)
 
 }
 
-//aggiunta funzione di ricerca 
+// Funzione di ricerca 
 const eseguiRicerca=()=> {
     if(testoRicerca.value.trim()!=='') {
         router.push({
@@ -171,7 +168,17 @@ const eseguiRicerca=()=> {
     }
 }
 
+// 2a Funzione secondaria per la barra di ricerca 
+const selezionaSuggerimento = (testo) => {
+  testoRicerca.value = testo
+  eseguiRicerca()
+}
 
+
+// Ciclo di vita
+onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione checkSession nel momento esatto in cui il componente
+    checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
+})
 
 </script>
 

@@ -69,7 +69,7 @@ watch(() => route.query, () => {
             <div v-if="risultati.giocatori && risultati.giocatori.length>0" class="mb-5">
                 <h4 class="border-bottom pb-2"> Giocatori</h4>
                 <ul class="list-group shadow-sm">
-                    <li v-for="giocaotori in risultati.giocatori" :key="giocatori.id" class="list-group-item d-flex  justify-content-between align-items-center">
+                    <li v-for="giocatore in risultati.giocatori" :key="giocatore.id" class="list-group-item d-flex  justify-content-between align-items-center">
                         <div>
                             <span class="fs-5 fw-semibold d-block">{{ giocatore.nome_cognome }}</span>
                             <small class="text-muted">{{ giocatore.ruolo }}</small>
@@ -102,7 +102,7 @@ watch(() => route.query, () => {
             </div>
 
             <!--nessun risultato-->
-            <div v-if="(!risultati.squadre || !risultati.squadre.length===0) && (!risultati.giocatori || !risultati.giocatori.length===0) && (!risultati.competizioni || !risultati.competizioni.length===0) && (!risultati.notizie || !risultati.notizie.length===0) " class="alert alert-warning text-center fs-5">
+            <div v-if="!risultati.squadre?.length===0 && risultati.giocatori?.length===0 && risultati.competizioni?.length===0 && risultati.notizie?.length===0" class="alert alert-warning text-center fs-5">
                 Nessun risultato trovato per la tua ricerca. Prova con termini diversi 
             </div>      
         </div>
