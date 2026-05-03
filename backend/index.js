@@ -263,14 +263,16 @@ app.listen(PORT, () => {
 // ==========================================
 // API RICERCA INTELLIGENTE 
 // ==========================================
+
+//diciamo al server -> quando qualcuno ti cerca all'indirizoo /api/ricerca esegui questa funzione, la funzione è async perche faremo operazioni che richiederanno tempo (parlare con database), req contiene la domanda dell'utente e res la risposta del server 
 app.get('/api/ricerca', async (req, res) => {
     //estraimamo i parametri dalle query 
-    const {q, tipo} = req.query;
+    const {q, tipo} = req.query; //prende l'url e ne estrae la parola cercata q e ne filtra il tipo
     if(!q) {
         return res.json({squadre: [], giocatori: [], competizioni: [], notizie: []});
     }
 
-    const searchTeam=`%${q}%`;
+    const searchTerm=`%${q}%`; //trucco per dire -> trova questa parola ovunque si trovi nel testo
     let risultati= {squadre: [], giocatori: [], competizioni: [], notizie: []};
 
     try {
@@ -279,7 +281,7 @@ app.get('/api/ricerca', async (req, res) => {
             const {data}= await supabase 
                 .from('squadre')
                 .select('id, nome, logo_url')
-                .ilike('nome', searchTerm);
+                .ilike('nome', searchTerm); //ilike -> la i sta per insensitive, signifca che sia se cerchiamo ROMA o roma trovera comunque risultati 
             risultati.squadre=data || [];
 
         }
@@ -304,8 +306,8 @@ app.get('/api/ricerca', async (req, res) => {
          if (tipo==='tutto' || tipo==='notizie') {
             const {data}= await supabase 
                 .from('notizie')
-                .select('id, titolo data_pubblicazione')
-                .or(`titolo.like.${searchTerm},contenuto.ilike.${searchTerm}`)
+                .select('id, titolo, data_pubblicazione')
+                .or(`titolo.ilike.${searchTerm},contenuto.ilike.${searchTerm}`); // mi trova tutte le notizie dove la parola cercata è prsente nel titolo oppure nel contenuto
             risultati.notizie=data || [];
          }
          res.json(risultati);

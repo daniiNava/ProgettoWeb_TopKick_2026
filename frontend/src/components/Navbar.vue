@@ -22,6 +22,8 @@ const regPassword   = ref('')
 
 const testoRicerca=ref('')
 const tipoRicerca=ref=('tutto')
+const suggerimenti=ref(null) //conterrà i risultati in tempo reale, della ricerca
+let timeoutRicerca=null //serve per il debouncing -> tecnica che coinsiste nell'aspettare che l'utente smetta di digitare per 300ms prima di far partire la chiamata al server senza intasarlo 
 // 1. Funzione che controlla se è presente una SESSIONE ATTIVA
 const checkSession = async () => {
     try {
@@ -132,7 +134,31 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
     checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
 })
 
-//agggiunta funzione di ricerca 
+
+
+const cercaLive= () => {
+    clearTimeout(timeoutRicerca) // cancella il timer precedente se l'utente sta ancora scrivendo 
+
+    // se ha scritto meno di due caratteri nascondiamo la tendina 
+    if(testoRicerca.value.trim().length<2) {
+        suggerimenti.value=null 
+        return 
+    }
+
+    timeoutRicerca=setTimeout(async() => {
+        try {
+            const response= await fetch(`/api/ricerca?q=${testoRicerca.value}&tipo=${tipoRicerca.value}`)
+            if (response.ok) {
+                suggerimenti.value=await response.json()
+            }
+        } catch(error) {
+            console.error("Errore live search:", error)
+        }
+    }, 300)
+
+}
+
+//aggiunta funzione di ricerca 
 const eseguiRicerca=()=> {
     if(testoRicerca.value.trim()!=='') {
         router.push({
@@ -140,9 +166,12 @@ const eseguiRicerca=()=> {
             query: {q: testoRicerca.value, tipo: tipoRicerca.value}
         })
         testoRicerca.value='' //svuota la barra dopo la ricerca 
+        suggerimenti.value=null //chiude la tendina dei suggerimenti 
         isDropdownOpen.value=false // chiude la tendina del profilo se era aperta 
     }
 }
+
+
 
 </script>
 
@@ -184,20 +213,48 @@ const eseguiRicerca=()=> {
                 </ul>
 
                 <!-- BARRA DI RICERCA -->
-                <form class="d-flex me-3" role="search" @submit.prevent="eseguiRicerca"> 
+                <form class="d-flex me-3 position-relative" role="search" @submit.prevent="eseguiRicerca"> 
                 <!-- @submit.prevent blocca il refresh della pagina e lancia la nostra funzione di ricerca-->
                 <!--d-flex  forza l'elemento ad adottare il modello di layout Flexbox allineando l'input di resto e il pulsante di ricerca-->
                 <!--role="search"   fornisce contesto semantico per le tecnologie assistive--> 
                     <!--costruiamo la tendina per selezionare la categoria di ricerca, collegata a tipoRicerca-->
-                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca">
+                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> <!-- v model permette di fare un collegamento a doppio senso, ovvero collega in tempo reale la scelta dell'utente ad una variabile javaScript detta tipoRicerca, se l'utente clicca su squadre, giocatori, ...la variabile si aggiorna all istante-->
                         <option value="tutto">Tutto</option>
                         <option value="squadre">Squadre</option>
                         <option value="giocatori">Giocatori </option>
                         <option value="competizioni">Competizioni</option>
                         <option value="notizie">Notizie</option>
                     </select>
-                    <input class="form-control me-2" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" required>
-                    <button class="btn btn-outline-success" type="submit">Cerca</button>
+
+                    <div class="position-relative w-100">
+                        <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                        <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0)" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                            <li v-if="suggerimenti.squadre.length>0">
+                                <h6 class="dropdown-header text-success">Squadre</h6>
+                            </li>
+                            <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
+                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
+                            </li>
+
+                            <li v-if="suggerimenti.giocatori.length>0">
+                                <h6 class="dropdown-header text-primary">Giocatori</h6>
+                            </li>
+                            <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
+                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
+                            </li>
+                        </ul>
+                    </div>
+
+
+                    <!--il type=search dice al browser che questo non è un campo di testo normale, ma una ricerca apparirà duqneu sullo tastiera dello smartphone una lente d'ingrandimento -->
+                    <!-- placeholder= cerca-> testo fantasma che suggerisce all'utente cosa fare prima che inizi a scrivere-->
+                    <!--v-model=testoRicerca, come per la tendina ogni singola lettera che l'utente digita viene salvata istantaneamente-->
+                    <!-- required -> se l'utente lascia il campo vuoto, il browser lo bloccherà e apparira in un fumetto rosso con scritto compila questo campo-->
+                    <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
                 </form>
 
                 <!-- IMPORTAZIONE (Tema) e PROFILO -->
