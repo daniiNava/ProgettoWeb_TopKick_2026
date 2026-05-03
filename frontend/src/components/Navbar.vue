@@ -235,7 +235,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 
                     <div class="position-relative w-100">
                         <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
-                        <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0)" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                        <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
                             <li v-if="suggerimenti.squadre.length>0">
                                 <h6 class="dropdown-header text-success">Squadre</h6>
                             </li>
@@ -249,6 +249,21 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                             <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
                                 <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
                             </li>
+
+                            <li v-if="suggerimenti.competizioni.length>0">
+                                <h6 class="dropdown-header text-primary">Competizioni</h6>
+                            </li>
+                            <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
+                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
+                            </li>
+
+                            <li v-if="suggerimenti.notizie.length>0">
+                                <h6 class="dropdown-header text-primary">Notizie</h6>
+                            </li>
+                            <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
+                                <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
+                            </li>
+
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
