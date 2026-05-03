@@ -95,8 +95,10 @@ watch(() => route.query, () => {
                 <h4 class="border-bottom pb-2"> Notizie</h4>
                 <ul class="list-group shadow-sm">
                     <li v-for="notizia in risultati.notizie" :key="notizia.id" class="list.group-item">
-                        <span class="fs-5 fw-semibold d-block">{{ notizia.titolo }}</span>
-                        <small class="text-muted">Pubblicato il: {{ new Date(notizia.data_pubblicazione).toLocaleDateString('it-IT') }}</small>
+                        <RouterLink :to="'/notizie/'+ notizia.id" class="text-decoration-none text-dark">
+                            <span class="fs-5 fw-semibold d-block">{{ notizia.titolo }}</span>
+                            <small class="text-muted">Pubblicato il: {{ new Date(notizia.data_pubblicazione).toLocaleDateString('it-IT') }}</small>
+                        </RouterLink>
                     </li>
                 </ul>
             </div>
