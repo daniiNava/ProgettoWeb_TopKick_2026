@@ -6,7 +6,8 @@ const session = require('express-session'); // visto che HTTP è stateless, ques
 const pgSession = require('connect-pg-simple')(session); // vengono salvati dei dati di sessione a un database PostGreSql nella RAM del server
 const { Pool } = require('pg'); // estrapola la classe Pool da pg. Pattern architetturale che mantiene attive alcune connessioni al database 
 const { createClient } = require('@supabase/supabase-js'); // Permette di comunicare con Supabase, tramite query con metodi JavaScript anzichè costrutti puri SQL
-const bcrypt = require('bcrypt') // Permette di comunicare le password di autenticazione degli utenti
+const bcrypt = require('bcrypt'); // Permette di comunicare le password di autenticazione degli utenti
+const multer = require('multer');
 // Instanziazione del server
 const app = express();  // Instanzia un nuovo oggetto express. app è il server stesso
 const PORT = 3000;      // Costante di tempo che definisce il valore della porta TCP
@@ -42,6 +43,10 @@ app.use(session({
         httpOnly: true                  // Sicurezza: il cookie non è leggibile da JS lato client
     }
 }));
+
+// --- Configurazione MULTER: si tiene il file in memoria RAM per passarlo direttamente poi a Supabase
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // --- ROTTA DI TEST ---
 app.get('/api/test', (req, res) => {
@@ -225,7 +230,8 @@ app.post('/api/logout', async(req, res) => {
 
 });
 
-// 5. Api per bloccare chiunque provi a creare una competizione senza essere Premium (Middleware)
+// 5. MIDDLEWARE DI SICUREZZA
+// Api per bloccare chiunque provi a creare una competizione senza essere Premium (Middleware)
 const checkPremium = (req, res, next) => {
     // Controllo l'utente se è loggato
     if(!req.session.user){ 
@@ -233,7 +239,7 @@ const checkPremium = (req, res, next) => {
     }
 
     // Controllo se è premium
-    if(!req.session.ruolo !== 'premium'){ 
+    if(req.session.user.ruolo !== 'premium'){ 
         return res.status(403).json({ error: "Accesso negato. Funzionalità riservata agli utenti Premium." });
     }
 
@@ -242,7 +248,7 @@ const checkPremium = (req, res, next) => {
 }
 
 // =============================
-// 7. API PREMIUM: Le mie competizioni
+// 7.1 API PREMIUM: Le mie competizioni: GESTIONE COMPETIZIONI
 // =============================
 
 // Prende le Mie Competizioni dell'utente premium
@@ -259,24 +265,51 @@ app.get('/api/mie-competizioni', checkPremium, async (req, res) => {
     } catch(error){
         res.status(500).json({ error: "Errore nel recupero delle tue competizioni." });
     }
-})
+});
 
 // Crea una nuova competizione 
-app.post('api/mie-competizioni', checkPremium, async (req, res) => {
-    cost { nome, logo_url, numero_squadre } = req.body;
+app.post('/api/mie-competizioni', checkPremium, upload.single('logo'), async (req, res) => {
+    const { nome, numero_squadre } = req.body;
+    const file = req.file;
 
     if(!nome || !numero_squadre){
         return res.status(400).json({ error: "Nome e numero squadre sono obbligatori"});
     }
 
     try {
+        let logo_url = null;
+
+        // Se l'utente ha mandato un file, si invia a Supabase
+        if(file){
+            // Creazione di un nome file univoco (timestamp + nome orig. senza spazi)
+            const fileName = `${Date.now()}_${file.originalname.replace(/\s/g, '_')}`; 
+        
+            // Upload su Supabase Storage (nel bucket 'loghi_UtentePremium)
+            const { data: storageData, error: storageError } = await supabase.storage
+                .from('Loghi_UtentePremium')
+                .upload(fileName, file.buffer, {
+                    contentType: file.mimetype      // Es. image/png, image/jpeg
+                });
+
+            if(storageError) throw storageError;
+
+            // Otteniamo l'URL pubblico dell'immagine appena caricata
+            const { data: publicUrlData } = supabase.storage
+                .from('Loghi_UtentePremium')
+                .getPublicUrl(fileName);
+
+            logo_url = publicUrlData.publicUrl;
+        
+        }
+
+        // Inserimento dati nel database PostgreSQL
         const { data, error } = await supabase
         .from('competizioni')
         .insert([{
             nome: nome,
-            logo_url: logo_url || null,
+            logo_url: logo_url,                   // Url di Supabase Storage o Null
             numero_squadre: numero_squadre,
-            creato_da: re.session.user.id       // Associazione tra la competizione e chi l'ha creata
+            creato_da: req.session.user.id       // Associazione tra la competizione e chi l'ha creata
         }])
         .select();
 
@@ -284,36 +317,284 @@ app.post('api/mie-competizioni', checkPremium, async (req, res) => {
         res.status(201).json({ message: "Competizione creata!", competizione: data[0] });
 
     } catch (error){
+        console.error("Errore creazione competizione: ", error)
         res.status(500).json({ error: "Errore nella creazione della competizione"});
     }
-})
+});
 
 // Eliminazione di una competizione
-app.delete('api/mie-competizioni', checkPremium, async (req, res) => {
-    cost { nome, logo_url, numero_squadre } = req.body;
-
-    if(!nome || !numero_squadre){
-        return res.status(400).json({ error: "Nome e numero squadre sono obbligatori"});
-    }
+app.delete('/api/mie-competizioni/:id', checkPremium, async (req, res) => {
+    const idCompetizione = req.params.id;
 
     try {
-        const { data, error } = await supabase
+        // Sicurezza doppia: Elimino solo se l'ID corrisponde e se l'ha creata l'utente loggato
+        const { error } = await supabase
         .from('competizioni')
+        .delete()
+        .eq('id', idCompetizione)
+        .eq('creato_da', req.session.user.id);
+
+        if(error) throw error;
+        res.json({ message: "Competizione eliminata con successo!" });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nell'eliminazione della competizione"});
+    }
+});
+
+// =============================
+// 7.2 API PREMIUM: gestione SQUADRE (delle competizioni)
+// =============================
+
+// Recupera i dettagli dettagli della competizione e le sue squadre
+app.get('/api/mie-competizioni/:id/squadre', checkPremium, async(req, res) => {
+    const idCompetizione = req.params.id;
+
+    try{
+        // 1. Verifica che la competizione esista e sia dell'utente loggato
+        const { data: comp, error: compError } = await supabase
+            .from('competizioni')
+            .select('id, nome, numero_squadre, creato_da')
+            .eq('id', idCompetizione)
+            .single();
+
+        if(compError || !comp)  return res.status(404).json({ error: "Competizione non trovata" });
+        if(comp.creato_da !== req.session.user.id)  return res.status(403).json({ error: "Non autorizzato" });
+
+        // 2. Recupero delle squadre
+        const { data: squadre, error: squadreError } = await supabase
+            .from('squadre')
+            .select('*')
+            .eq('id_competizione', idCompetizione)
+            .order('creato_il', { ascending:false })
+
+        if(squadreError) throw squadreError;
+
+        // Restituzione dei dati della competizione (per titolo) e delle squadre
+        res.json({ competizione: comp, squadre: squadre });
+
+    } catch(err){
+        res.status(500).json({ error: "Errore nel recupero delle squadre" })
+    }
+});
+
+
+// Aggiunge una nuova SQUADRA
+app.post('/api/mie-competizioni/:id/squadre', checkPremium, upload.single('logo'), async (req, res) => {
+    const idCompetizione = req.params.id;
+    const { nome } = req.body;
+    const file = req.file;
+
+    if(!nome) return res.status(400).json({ error: "Il nome della squadra è obbligatorio"});
+
+    try {
+
+        // Controlli in piu (che per l'aggiunte delle competizioni, prima non veniva fatto)
+        // 0.1 Controllo Sicurezza e Limite squadre
+        const { data: comp } = await supabase
+            .from('competizioni')
+            .select('creato_da, numero_squadre')
+            .eq('id', idCompetizione)
+            .single();
+
+        if(!comp || comp.creato_da !== req.session.user.id) return res.status(403).json({ error: "Non autorizzato" });
+
+        // 0.2 Contiamo quante squadre ci sono gia
+        const { count } = await supabase
+            .from('squadre')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_competizione', idCompetizione);
+
+        if(count >= comp.numero_squadre) return res.status(400).json({ error: `Limite massimo raggiunto (${comp.numero_squadre}).` });
+
+        
+        // 1. Upload Logo
+        let logo_url = null;
+
+        // Se l'utente ha mandato un file, si invia a Supabase
+        if(file){
+            // Creazione di un nome file univoco (timestamp + nome orig. senza spazi)
+            const fileName = `squadre/${Date.now()}_${file.originalname.replace(/\s/g, '_')}`; 
+
+            const { error: storageError } = await supabase.storage
+                .from('Loghi_UtentePremium')
+                .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+            if(storageError) throw storageError;
+
+            const { data: publicUrlData } = supabase.storage
+                .from('Loghi_UtentePremium')
+                .getPublicUrl(fileName);       
+            
+            logo_url = publicUrlData.publicUrl;
+        
+        }
+
+        // 2. Inserimento dati nel database PostgreSQL
+        const { data, error } = await supabase
+        .from('squadre')
         .insert([{
             nome: nome,
-            logo_url: logo_url || null,
-            numero_squadre: numero_squadre,
-            creato_da: re.session.user.id       // Associazione tra la competizione e chi l'ha creata
+            logo_url: logo_url,                   // Url di Supabase Storage o Null
+            id_competizione: idCompetizione,
+            creato_da: req.session.user.id       // Associazione tra la competizione e chi l'ha creata
         }])
         .select();
 
         if(error) throw error;
-        res.status(201).json({ message: "Competizione creata!", competizione: data[0] });
+        res.status(201).json({ message: "Squadra creata e aggiunta!", squadra: data[0] });
 
     } catch (error){
-        res.status(500).json({ error: "Errore nella creazione della competizione"});
+        console.error("Errore creazione competizione: ", error)
+        res.status(500).json({ error: "Errore nell'aggiunta della squadra"});
     }
-})
+});
+
+// Eliminazione di una SQUADRA
+app.delete('/api/squadre/:id', checkPremium, async (req, res) => {
+    const idSquadra = req.params.id;
+
+    try {
+        // Sicurezza doppia: Elimino solo se l'ID corrisponde e se l'ha creata l'utente loggato
+        const { error } = await supabase
+        .from('squadre')
+        .delete()
+        .eq('id', idSquadra)
+        .eq('creato_da', req.session.user.id);
+
+        if(error) throw error;
+        res.status(200).json({ message: "Squadra eliminata con successo!" });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nell'eliminazione della squadra"});
+    }
+});
+
+
+
+// =============================
+// 7.3 API PREMIUM: gestione CALCIATORI (delle squadre delle competizioni)
+// =============================
+
+// Limiti massimi per ruolo
+const LIMITI_RUOLI = {
+    'Portiere': 3,
+    'Difensore': 6,
+    'Centrocampista': 6,
+    'Attaccante': 4,
+}
+
+
+// Recupera i dettagli della squadra e la sua rosa di giocatori
+app.get('/api/squadre/:id/giocatori', checkPremium, async (req, res) => {
+    const idSquadra = req.params.id;
+
+    try {
+        // Verifica che la squadra esista e sia dell'utente loggato
+        const { data: squadra, error: sqError } = await supabase
+            .from('squadre')
+            .select('id, nome, logo_url, id_competizione, creato_da')
+            .eq('id', idSquadra)
+            .single();
+
+        if(sqError || !squadra) return res.status(404).json({ error: "Squadra non trovata" });
+        if(squadra.creato_da !== req.session.user.id) return res.status(403).json({ error: "Non autorizzato per questa competizione" });
+        
+        // Recupero dei giocatori
+        const { data: giocatori, error: gioError } = await supabase
+            .from('giocatori')
+            .select('*')
+            .eq('id_squadra', idSquadra)
+            .order('ruolo', { ascending: true });  // Restituzione dei giocatori ordinata per ruolo
+
+        if(gioError) throw gioError;
+
+        res.json({ squadra: squadra, giocatori: giocatori  });
+    } catch (error) {
+        res.status(500).json({ error: "Errore nel recupero dei giocatori" });
+    }
+
+});
+
+// Aggiunge un nuovo giocatore
+app.post('/api/squadre/:id/giocatori', checkPremium, async (req, res) => {
+    const idSquadra = req.params.id;
+    const { nome_cognome, ruolo, data_nascita, piede_preferito } = req.body;
+
+    // Controllo inserimento campi obbligatori
+    if(!nome_cognome || !ruolo) return res.status(400).json({ error: "Nome e ruolo sono obbligatori" });
+
+    // Controllo ruolo
+    if(!LIMITI_RUOLI[ruolo]) return res.status(400).json({ error: "Ruolo non valido" })
+
+    try {
+        // Verifica che la squadra sia dell'utente loggato
+        const { data: squadra } = await supabase
+            .from('squadre')
+            .select('creato_da')
+            .eq('id', idSquadra)
+            .single();
+
+        if(!squadra || squadra.creato_da !== req.session.user.id){
+            return res.status(403).json({ error: "Non autorizzato per questa competizione" });
+        }
+
+        // Controllo limite per quel ruolo specifico (Recupero dei giocatori)
+        const { count, countError } = await supabase
+            .from('giocatori')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_squadra', idSquadra)
+            .eq('ruolo', ruolo );  
+
+        if(countError) throw countError;
+
+        if(count >= LIMITI_RUOLI[ruolo]) {
+            return res.status(400).json({ error: `Limite max raggiunto per il ruolo che hai scelto: ${ruolo} (${LIMITI_RUOLI[ruolo]}).` });
+        }
+
+        // Inserimento nel DB
+        const { data, error } = await supabase
+            .from('giocatori')
+            .insert([{
+                nome_cognome,
+                ruolo,
+                data_nascita: data_nascita || null, 
+                piede_preferito: piede_preferito || null, 
+                id_squadra: idSquadra,
+                creato_da: req.session.user.id
+            }])
+            .select();
+
+        if(error) throw error;
+        res.status(201).json({ message: "Giocatore aggiunto!", giocatore: data[0] });
+
+    } catch (err) {
+        console.error("Error aggiunta giocatore:", err)
+        res.status(500).json({ error: "Errore nell'aggiunta del giocatore" });
+    }
+
+});
+
+// Eliminazione di un GIOCATORE
+app.delete('/api/giocatori/:id', checkPremium, async (req, res) => {
+    const idGiocatore = req.params.id;
+
+    try {
+        // Sicurezza doppia: Elimino solo se l'ID corrisponde e se l'ha creato l'utente loggato
+        const { error } = await supabase
+        .from('giocatori')
+        .delete()
+        .eq('id', idGiocatore)
+        .eq('creato_da', req.session.user.id);
+
+        if(error) throw error;
+        res.status(200).json({ message: "Giocatore eliminato con successo!" });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nell'eliminazione del giocatore"});
+    }
+});
+
 
 // ========================================
 //      FASE 6 - /Notizie
