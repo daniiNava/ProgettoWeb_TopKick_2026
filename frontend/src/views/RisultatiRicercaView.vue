@@ -42,7 +42,7 @@ watch(() => route.query, () => {
 </script>
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
         <h2 class="fw-bold mb-4">
             Risultati per: <span class="text-success">"{{ route.query.q }}"</span> <!-- stampiamo la parola esatta che ha cercato l'utente, prendendola dall'url-->
         </h2>

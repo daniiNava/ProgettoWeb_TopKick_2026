@@ -12,6 +12,31 @@ const isLoginMode = ref(true)   // Variabile per scambiare la vista del popup tr
 
 const isDropdownOpen = ref(false)   // Var. per il controllo del menu a tendina
 
+const isDarkMode = ref(false) // Variabile reattiva per sapere in che tema siamo
+
+// Funzione per inizializzare il tema quando si apre il sito
+const initTheme = () => {
+  // Leggiamo dal localStorage se l'utente aveva già scelto un tema in passato
+  const savedTheme = localStorage.getItem('theme')
+  
+  if (savedTheme === 'dark') {
+    isDarkMode.value = true
+    document.documentElement.setAttribute('data-bs-theme', 'dark') // Applica il tema scuro di Bootstrap
+  } else {
+    isDarkMode.value = false
+    document.documentElement.setAttribute('data-bs-theme', 'light') // Applica il tema chiaro
+  }
+}
+
+// Funzione che scatta quando si clicca il bottone Sole/Luna
+const toggleTheme = () => {
+  isDarkMode.value = !isDarkMode.value // Inverte il valore (da true a false o viceversa)
+  
+  const newTheme = isDarkMode.value ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-bs-theme', newTheme) // Aggiorna l'HTML
+  localStorage.setItem('theme', newTheme) // Salva la scelta nel browser
+}
+
 const router=useRouter()
 // Variabili per i form (stringhe reattive: vengono modificate sia dall'utente che scrive sia se il codice svuota la variabile)
 const loginEmail    = ref('')
@@ -178,6 +203,7 @@ const selezionaSuggerimento = (testo) => {
 // Ciclo di vita
 onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione checkSession nel momento esatto in cui il componente
     checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
+    initTheme()         // Controlla il tipo di tema selezionato nell ultimo accesso e lo inizializza
 })
 
 </script>
@@ -281,7 +307,14 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 
                 <!-- IMPORTAZIONE (Tema) e PROFILO -->
                  <div class="d-flex align-items-center">
-                    <button class="btn btn-secondary me-3" title="Cambia Tema">☀️/🌙</button>
+                    <!-- Bottone Tema: Mostra la Luna se è chiaro, il Sole se è scuro -->
+                    <button 
+                    @click="toggleTheme" 
+                    class="btn btn-outline-secondary border-0 fs-5 me-3" 
+                    :title="isDarkMode ? 'Passa al tema chiaro' : 'Passa al tema scuro'"
+                    >
+                        {{ isDarkMode ? '☀️' : '🌙' }}
+                    </button>
 
                     <!-- Gestione Profilo tramite approccio Vue.js NATIVO-->
                     <div class="nav-item dropdown">

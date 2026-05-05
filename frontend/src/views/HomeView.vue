@@ -53,7 +53,7 @@ onMounted(() => {
 
 
 <template>
-    <div class="container my-4">
+    <div class="container py-4">
 
         <!-- SEZIONE 1: CAROSELLO NOTIZIE-->
         <section class="mb-5">

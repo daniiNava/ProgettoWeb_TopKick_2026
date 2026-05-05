@@ -30,7 +30,7 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
         <h1 class="fw-bold mb-4 border-bottom pb-2 border-success">Tutte le Notizie</h1>
         <!--mostra questo blocco del v-if finchè l'api non è terminata-->
         <div v-if="caricamento" class="text-center my-5">

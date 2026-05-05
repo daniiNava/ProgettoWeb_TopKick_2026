@@ -110,7 +110,7 @@ onMounted(() => {
 
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-success">
             <h1 class="fw-bold">⭐ Le Mie Competizioni</h1>
         </div>
