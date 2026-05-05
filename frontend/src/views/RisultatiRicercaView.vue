@@ -80,14 +80,24 @@ watch(() => route.query, () => {
             </div>
 
             <!--risultati competizioni-->
-            <div v-if="risultati.competizioni && risultati.competizioni.length>0" class="mb-5">
-                <h4 class="border-bottom pb-2"> Competizioni</h4>
-                <ul class="list-group shadow-sm">
-                    <li v-for="comp in risultati.competizioni" :key="comp.id" class="list.group-item d-flex align-items-center">
-                        <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover";>
-                        <span class="fs-5 fw-semibold">{{ comp.nome }}</span>
-                    </li>
-                </ul>
+            <div v-if="risultati.competizioni && risultati.competizioni.length > 0" class="mb-5">
+                <h4 class="border-bottom pb-2">Competizioni</h4>
+                <div class="list-group shadow-sm">
+                    <!-- Usiamo RouterLink come tag principale per rendere l'intera area cliccabile -->
+                    <RouterLink 
+                        v-for="comp in risultati.competizioni" 
+                        :key="comp.id" 
+                        :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }"
+                        class="list-group-item list-group-item-action d-flex align-items-center"
+                    >
+                        <img 
+                            :src="comp.logo_url || 'https://via.placeholder.com/40'" 
+                            class="rounded me-3" 
+                            style="width: 40px; height: 40px; object-fit: cover;"
+                        >
+                        <span class="fs-5 fw-semibold text-dark">{{ comp.nome }}</span>
+                    </RouterLink>
+                </div>
             </div>
 
             <!--risultati notizie-->
