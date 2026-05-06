@@ -118,7 +118,7 @@ onMounted(() => fetchDati())
           <!-- Header Card -->
           <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-              <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+              <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="me-3" style="width: auto; height: 40px;">
               <h4 class="fw-bold mb-0">{{ comp.nome }}</h4>
             </div>
             <RouterLink :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
@@ -140,7 +140,7 @@ onMounted(() => fetchDati())
                   </td>
                   <td>
                     <RouterLink :to="`/squadre/${sq.id}`" class="text-decoration-none text-dark fw-semibold d-flex align-items-center custom-link">
-                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="rounded-circle me-2 shadow-sm" style="width: 25px; height: 25px; object-fit: cover;">
+                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: auto; height: 25px;">
                       {{ sq.nome }}
                     </RouterLink>
                   </td>

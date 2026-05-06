@@ -230,11 +230,17 @@ onMounted(() => fetchDettagli())
               <button class="btn btn-link text-success fs-4 p-0 ms-3 text-decoration-none" title="Aggiungi ai preferiti">☆</button>
             </h1>
             <p class="text-muted mb-0 fs-5">
+<<<<<<< HEAD
               Competizione: 
               <RouterLink v-if="squadra.competizioni" :to="`/competizioni/${squadra.id_competizione}`" class="text-decoration-none text-dark custom-link fw-bold">
                 {{ squadra.competizioni.nome }}
               </RouterLink>
               <strong v-else>N.D.</strong>
+=======
+              Competizione: <RouterLink :to="{ path: `/competizioni/${squadra.competizioni.id}`, query: { annata: annataSelezionata } }" style="text-decoration: none;color: inherit;">
+              <strong>{{ squadra.competizioni?.nome || 'N.D.' }}</strong>
+            </RouterLink>
+>>>>>>> 189ba91899076b1432ba0a163240b5fb02ba2a1f
             </p>
           </div>
         </div>
@@ -438,7 +444,7 @@ onMounted(() => fetchDettagli())
                   </td>
                   <td class="text-start fw-semibold">
                     <RouterLink :to="`/squadre/${sq.id}`" class="text-decoration-none text-dark d-flex align-items-center custom-link">
-                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="rounded-circle me-2 shadow-sm" style="width: 25px; height: 25px; object-fit: cover;">
+                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: auto; height: 25px;">
                       {{ sq.nome }}
                     </RouterLink>
                   </td>
