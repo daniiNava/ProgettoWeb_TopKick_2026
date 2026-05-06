@@ -1,13 +1,15 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const idCompetizione = parseInt(route.params.id)
 
+// --- VARIABILI DI STATO ---
 const competizione = ref(null)
 const partite = ref([])
 const notizie = ref([])
+const marcatoriRisolti = ref([])
 const caricamento = ref(true)
 const activeTab = ref('classifica')
 
@@ -15,31 +17,120 @@ const activeTab = ref('classifica')
 const annataSelezionata = ref(route.query.annata || '25/26');
 const annateDisponibili = ref(['23/24','24/25','25/26'])
 
+// Variabili per l'UI della Giornata e Dettagli Partita
+const giornataSelezionata = ref(null);
+const partiteEspanse = ref([]); 
+
+// --- FETCH DEI DATI ---
 const fetchDettagli = async () => {
+  caricamento.value = true;
   try {
     const response = await fetch(`/api/competizioni/${idCompetizione}/dettagli?annata=${annataSelezionata.value}`);
     if (response.ok) {
       const data = await response.json();
       competizione.value = data.competizione;
       partite.value = data.partite;
-      marcatoriRisolti.value = data.marcatori;
+      marcatoriRisolti.value = data.marcatori || [];
       notizie.value = data.notizie;
     }
-  } catch (error) { console.error(error); }
-  finally { caricamento.value = false }
+  } catch (error) { 
+    console.error(error); 
+  } finally { 
+    caricamento.value = false;
+  }
 };
-// --- COMPUTED PROPERTIES ---
 
+// --- COMPUTED PROPERTIES: PARTITE ---
 const partiteGiocate = computed(() => partite.value.filter(p => p.stato === 'finita').reverse())
 const partiteDaGiocare = computed(() => partite.value.filter(p => p.stato !== 'finita'))
 const prossimePartite = computed(() => partiteDaGiocare.value.slice(0, 4))
 
-// ALGORITMO CLASSIFICA + FORMA (V, N, P)
-// ALGORITMO CLASSIFICA + FORMA (V, N, P) - VERSIONE SICURA
+const partitePerGiornata = computed(() => {
+  const giornate = {};
+  const partiteOrdinate = [...partite.value].sort((a, b) => {
+    if (a.giornata !== b.giornata) return a.giornata - b.giornata;
+    return new Date(a.data_ora) - new Date(b.data_ora);
+  });
+
+  partiteOrdinate.forEach(partita => {
+    const n = partita.giornata || 'Altro';
+    if (!giornate[n]) giornate[n] = [];
+    giornate[n].push(partita);
+  });
+  
+  return giornate;
+});
+
+// Imposta l'ultima giornata non appena le partite vengono caricate e raggruppate
+watch(partitePerGiornata, (nuoveGiornate) => {
+  const giornateKeys = Object.keys(nuoveGiornate);
+  if (giornateKeys.length > 0 && !giornataSelezionata.value) {
+    giornataSelezionata.value = giornateKeys[giornateKeys.length - 1];
+  }
+});
+
+// --- FUNZIONI DI SUPPORTO PER I GOL E L'UI ---
+const toggleDettagliPartita = (partitaId) => {
+  const index = partiteEspanse.value.indexOf(partitaId);
+  if (index === -1) {
+    partiteEspanse.value.push(partitaId);
+  } else {
+    partiteEspanse.value.splice(index, 1);
+  }
+};
+
+const checkAutogol = (tipo) => {
+  const t = (tipo || '').toLowerCase().trim();
+  return t === 'autogol' || t === 'own_goal' || t === 'own goal' || t === 'owngoal';
+};
+
+const checkRigore = (tipo) => {
+  const t = (tipo || '').toLowerCase().trim();
+  return t === 'rigore' || t === 'penalty';
+};
+
+// --- LOGICA DI ASSEGNAZIONE GOL (CASA) ---
+const getMarcatoriCasa = (partita) => {
+  if (!partita || !partita.squadra_casa || !partita.squadra_trasferta) return [];
+  
+  return marcatoriRisolti.value.filter(m => {
+    if (Number(m.partita_id) !== Number(partita.id)) return false;
+    
+    const idSquadraGiocatore = Number(m.giocatore?.id_squadra);
+    const idCasa = Number(partita.squadra_casa.id);
+    const idTrasferta = Number(partita.squadra_trasferta.id);
+    const isAutogol = checkAutogol(m.tipo_gol);
+
+    const golNormaleCasa = (idSquadraGiocatore === idCasa) && !isAutogol;
+    const autogolTrasferta = (idSquadraGiocatore === idTrasferta) && isAutogol;
+
+    return golNormaleCasa || autogolTrasferta;
+  }).sort((a, b) => Number(a.minuto) - Number(b.minuto));
+};
+
+// --- LOGICA DI ASSEGNAZIONE GOL (TRASFERTA) ---
+const getMarcatoriTrasferta = (partita) => {
+  if (!partita || !partita.squadra_casa || !partita.squadra_trasferta) return [];
+  
+  return marcatoriRisolti.value.filter(m => {
+    if (Number(m.partita_id) !== Number(partita.id)) return false;
+    
+    const idSquadraGiocatore = Number(m.giocatore?.id_squadra);
+    const idCasa = Number(partita.squadra_casa.id);
+    const idTrasferta = Number(partita.squadra_trasferta.id);
+    const isAutogol = checkAutogol(m.tipo_gol);
+
+    const golNormaleTrasferta = (idSquadraGiocatore === idTrasferta) && !isAutogol;
+    const autogolCasa = (idSquadraGiocatore === idCasa) && isAutogol;
+
+    return golNormaleTrasferta || autogolCasa;
+  }).sort((a, b) => Number(a.minuto) - Number(b.minuto));
+};
+
+// --- ALGORITMO CLASSIFICA ---
 const classificaCalcolata = computed(() => {
   const classifica = {}
 
-  // Inizializziamo le squadre (SOLO se la partita ha entrambe le squadre valide)
   partite.value.forEach(p => {
     if (p.squadra_casa && p.squadra_trasferta) {
       [p.squadra_casa, p.squadra_trasferta].forEach(sq => {
@@ -54,14 +145,12 @@ const classificaCalcolata = computed(() => {
     }
   })
 
-  // Calcoliamo i punti e la forma (solo partite finite E con squadre valide)
   const finite = partite.value.filter(p => p.stato === 'finita' && p.squadra_casa && p.squadra_trasferta)
   
   finite.forEach(p => {
     const sqCasa = classifica[p.squadra_casa.id]
     const sqTrasf = classifica[p.squadra_trasferta.id]
 
-    // Se per qualche motivo le squadre non sono nell'oggetto, saltiamo
     if (!sqCasa || !sqTrasf) return;
 
     sqCasa.giocate++; sqTrasf.giocate++;
@@ -80,7 +169,6 @@ const classificaCalcolata = computed(() => {
     }
   })
 
-  // Trasformiamo in array, calcoliamo la Differenza Reti e prendiamo solo le ultime 5 per la Forma
   return Object.values(classifica).map(sq => {
     sq.dr = sq.gf - sq.gs
     sq.forma = sq.storicoForma.slice(-5).reverse() 
@@ -92,6 +180,51 @@ const classificaCalcolata = computed(() => {
   })
 })
 
+// --- STATISTICHE INDIVIDUALI ---
+const classificaMarcatori = computed(() => {
+  const stats = {};
+  
+  marcatoriRisolti.value.forEach(m => {
+    if (checkAutogol(m.tipo_gol)) return; // Esclude autogol
+
+    const g = m.giocatore;
+    if (g && g.nome_cognome) {
+      const chiave = g.nome_cognome.trim();
+      if (!stats[chiave]) {
+        stats[chiave] = { nome: chiave, squadra: g.squadra?.nome || 'N.D.', gol: 0 };
+      }
+      stats[chiave].gol++;
+    }
+  });
+  
+  return Object.values(stats)
+    .filter(item => item.nome !== "" && item.nome !== "undefined")
+    .sort((a, b) => b.gol - a.gol)
+    .slice(0, 15);
+});
+
+const classificaAssist = computed(() => {
+  const stats = {};
+  
+  marcatoriRisolti.value.forEach(m => {
+    if (checkAutogol(m.tipo_gol)) return; // Esclude assist su autogol
+
+    const a = m.assistman;
+    if (a && a.nome_cognome) {
+      const nomeAssistman = a.nome_cognome.trim();
+      if (!stats[nomeAssistman]) {
+        stats[nomeAssistman] = { nome: nomeAssistman, squadra: a.squadra?.nome || 'N.D.', assist: 0 };
+      }
+      stats[nomeAssistman].assist++;
+    }
+  });
+
+  return Object.values(stats)
+    .sort((a, b) => b.assist - a.assist)
+    .slice(0, 15);
+});
+
+// --- UTILITY FORMATTAZIONE ---
 const getBadgeClass = (index) => {
   if (index < 4) return 'badge-champions'
   if (index === 4) return 'badge-europa'
@@ -103,74 +236,6 @@ const formattaData = (dataStringa) => {
   const opzioni = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }
   return new Date(dataStringa).toLocaleDateString('it-IT', opzioni)
 }
-const marcatoriRisolti = ref([]); // Sarà popolato dal fetch
-
-const classificaMarcatori = computed(() => {
-  const stats = {};
-  
-  marcatoriRisolti.value.forEach(m => {
-    const g = m.giocatore;
-    if (g && g.nome_cognome) {
-      const chiave = g.nome_cognome.trim();
-      if (!stats[chiave]) {
-        stats[chiave] = { 
-          nome: chiave, 
-          squadra: g.squadra?.nome || 'N.D.', 
-          gol: 0 
-        };
-      }
-      stats[chiave].gol++;
-    }
-  });
-  return Object.values(stats)
-    .filter(item => item.nome !== "" && item.nome !== "undefined")
-    .sort((a, b) => b.gol - a.gol)
-    .slice(0, 15);
-});
-
-const classificaAssist = computed(() => {
-  const stats = {};
-  
-  marcatoriRisolti.value.forEach(m => {
-    const a = m.assistman;
-    // Se l'assistman esiste ed ha un nome, lo contiamo a prescindere dal record dell'annata[cite: 3]
-    if (a && a.nome_cognome) {
-      const nomeAssistman = a.nome_cognome.trim();
-      if (!stats[nomeAssistman]) {
-        stats[nomeAssistman] = { 
-          nome: nomeAssistman, 
-          squadra: a.squadra?.nome || 'N.D.',
-          assist: 0 
-        };
-      }
-      stats[nomeAssistman].assist++;
-    }
-  });
-
-  return Object.values(stats)
-    .sort((a, b) => b.assist - a.assist)
-    .slice(0, 15);
-});
-
-const partitePerGiornata = computed(() => {
-  const giornate = {};
-  
-  // Ordiniamo le partite prima per giornata e poi per data
-  const partiteOrdinate = [...partite.value].sort((a, b) => {
-    if (a.giornata !== b.giornata) return a.giornata - b.giornata;
-    return new Date(a.data_ora) - new Date(b.data_ora);
-  });
-
-  partiteOrdinate.forEach(partita => {
-    const n = partita.giornata || 'Altro';
-    if (!giornate[n]) {
-      giornate[n] = [];
-    }
-    giornate[n].push(partita);
-  });
-  
-  return giornate;
-});
 
 onMounted(() => fetchDettagli())
 
@@ -184,7 +249,6 @@ onMounted(() => fetchDettagli())
 
     <div v-else-if="competizione">
       
-      <!-- HEADER COMPETIZIONE -->
       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
         <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-4 rounded" style="width: 100px; height: 100px; object-fit: contain;">
         <div class="col">
@@ -201,7 +265,6 @@ onMounted(() => fetchDettagli())
         </div>
       </div>
 
-      <!-- NAVIGAZIONE A TAB -->
       <ul class="nav nav-tabs mb-4 border-bottom-2 flex-nowrap overflow-auto" style="white-space: nowrap;">
         <li class="nav-item" v-for="tab in ['riepilogo', 'risultati', 'classifica', 'marcatori', 'assist', 'news']" :key="tab">
           <a class="nav-link fw-bold text-uppercase px-4" 
@@ -212,10 +275,8 @@ onMounted(() => fetchDettagli())
         </li>
       </ul>
 
-      <!-- CONTENUTO TAB -->
       <div class="bg-white p-4 rounded-4 shadow-sm border min-vh-50">
         
-        <!-- TAB: CLASSIFICA (Il cuore della pagina) -->
         <div v-if="activeTab === 'classifica'">
           <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -252,12 +313,10 @@ onMounted(() => fetchDettagli())
                   <td class="text-center">{{ sq.dr > 0 ? '+'+sq.dr : sq.dr }}</td>
                   <td class="text-center fw-bold fs-5">{{ sq.punti }}</td>
                   <td class="text-center">
-                    <!-- I QUADRATINI DELLA FORMA -->
                     <div class="d-flex justify-content-center gap-1">
                       <span v-for="(ris, i) in sq.forma" :key="i" class="forma-box" :class="'forma-' + ris.toLowerCase()">
                         {{ ris }}
                       </span>
-                      <!-- Se ha giocato meno di 5 partite, riempiamo con quadratini grigi -->
                       <span v-for="i in (5 - sq.forma.length)" :key="'empty'+i" class="forma-box forma-empty">?</span>
                     </div>
                   </td>
@@ -267,7 +326,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: RIEPILOGO -->
         <div v-if="activeTab === 'riepilogo'">
           <h5 class="fw-bold mb-3">Prossime Partite</h5>
           <div class="row g-3">
@@ -284,84 +342,85 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: RISULTATI -->
         <div v-if="activeTab === 'risultati' || activeTab === 'calendario'">
-          <div v-for="(partiteGiornata, numeroGiornata) in partitePerGiornata" 
-              :key="numeroGiornata" class="mb-5">
-            
-            <!-- Intestazione Giornata -->
-            <div class="d-flex align-items-center mb-4">
-              <div class="bg-success text-white px-3 py-1 rounded-pill fw-bold small text-uppercase">
+          
+          <div class="mb-4 bg-light p-3 rounded-4 shadow-sm border">
+            <h6 class="text-uppercase text-muted small fw-bold mb-3 ms-1">Seleziona Giornata</h6>
+            <div class="d-flex overflow-auto pb-2 gap-2 hide-scrollbar">
+              <button v-for="(partiteLista, numeroGiornata) in partitePerGiornata" :key="numeroGiornata" 
+                      class="btn rounded-pill px-4 py-2 fw-semibold flex-shrink-0 transition"
+                      :class="giornataSelezionata === String(numeroGiornata) ? 'btn-success shadow-sm' : 'btn-white border text-muted bg-white'"
+                      @click="giornataSelezionata = String(numeroGiornata); partiteEspanse = [];">
                 Giornata {{ numeroGiornata }}
-              </div>
-              <div class="flex-grow-1 ms-3 border-bottom opacity-25"></div>
+              </button>
             </div>
+          </div>
 
-            <div class="row g-3">
-              <div v-for="partita in partiteGiornata" :key="partita.id" class="col-12 col-md-6">
-                <div class="card border-0 shadow-sm hover-shadow transition">
-                  <div class="card-body p-3">
-                    
-                    <!-- Data e Ora -->
-                    <div class="text-center mb-3">
-                      <span class="badge bg-light text-dark border fw-normal">
-                        {{ formattaData(partita.data_ora) }}
-                      </span>
-                    </div>
-                    
-                    <div class="d-flex align-items-center">
-                      <!-- Squadra Casa -->
-                      <div class="text-center flex-grow-1" style="width: 35%;">
-                        <img :src="partita.squadra_casa?.logo_url" 
-                            class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
-                        <div class="fw-bold small text-truncate">{{ partita.squadra_casa?.nome }}</div>
-                      </div>
-
-                      <!-- BLOCCO PUNTEGGIO / VS -->
-                      <div class="px-3">
-                        <template v-if="partita.stato === 'finita'">
-                          <div class="d-flex flex-column align-items-center">
-                            <div class="fw-black fs-4">{{ partita.gol_casa }} - {{ partita.gol_trasferta }}</div>
-                            <span class="badge bg-secondary-subtle text-secondary px-2 py-0" style="font-size: 0.6rem;">FINALE</span>
-                          </div>
-                        </template>
-                        <template v-else>
-                          <div class="fw-bold text-muted border-start border-end px-3">VS</div>
-                        </template>
-                      </div>
-
-                      <!-- Squadra Trasferta -->
-                      <div class="text-center flex-grow-1" style="width: 35%;">
-                        <img :src="partita.squadra_trasferta?.logo_url" 
-                            class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
-                        <div class="fw-bold small text-truncate">{{ partita.squadra_trasferta?.nome }}</div>
-                      </div>
+          <div v-if="giornataSelezionata && partitePerGiornata[giornataSelezionata]" class="row g-3">
+            <div v-for="partita in partitePerGiornata[giornataSelezionata]" :key="partita.id" class="col-12 col-lg-6">
+              
+              <div class="card border-0 shadow-sm transition">
+                <div class="card-body p-3">
+                  <div class="text-center mb-3">
+                    <span class="badge bg-light text-dark border fw-normal">
+                      {{ formattaData(partita.data_ora) }}
+                    </span>
+                  </div>
+                  
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="text-center" style="width: 35%;">
+                      <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                      <div class="fw-bold small text-truncate">{{ partita.squadra_casa?.nome }}</div>
                     </div>
 
+                    <div class="px-2 text-center punteggio-box p-2 rounded-3" @click="toggleDettagliPartita(partita.id)">
+                      <template v-if="partita.stato === 'finita'">
+                        <div class="fw-black fs-4 text-dark lh-1 mb-1">{{ partita.gol_casa }} - {{ partita.gol_trasferta }}</div>
+                        <div class="d-flex align-items-center justify-content-center gap-1 text-secondary" style="font-size: 0.65rem;">
+                          <span>FINALE</span>
+                          <span class="freccia-dettagli" :class="{'ruotata': partiteEspanse.includes(partita.id)}">▼</span>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="fw-bold text-muted px-3">VS</div>
+                      </template>
+                    </div>
+
+                    <div class="text-center" style="width: 35%;">
+                      <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                      <div class="fw-bold small text-truncate">{{ partita.squadra_trasferta?.nome }}</div>
+                    </div>
                   </div>
                 </div>
+
+                <div v-if="partiteEspanse.includes(partita.id) && partita.stato === 'finita'" class="card-footer bg-white border-top p-3 details-dropdown">
+                  <div class="row text-muted small">
+                    
+                    <div class="col-6 text-end pe-3 border-end">
+                      <div v-for="m in getMarcatoriCasa(partita)" :key="m.id" class="mb-1">
+                        <span class="me-1">{{ m.giocatore?.nome_cognome }} {{ m.minuto }}'</span>
+                        <span v-if="checkRigore(m.tipo_gol)">(R) ⚽</span>
+                        <span v-else-if="checkAutogol(m.tipo_gol)">🔴⚽ <small>(Aut)</small></span>
+                        <span v-else>⚽</span>
+                      </div>
+                    </div>
+                    
+                    <div class="col-6 text-start ps-3">
+                      <div v-for="m in getMarcatoriTrasferta(partita)" :key="m.id" class="mb-1">
+                        <span v-if="checkRigore(m.tipo_gol)">⚽ (R)</span>
+                        <span v-else-if="checkAutogol(m.tipo_gol)">🔴⚽ <small>(Aut)</small></span>
+                        <span v-else>⚽</span>
+                        <span class="ms-1">{{ m.minuto }}' {{ m.giocatore?.nome_cognome }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
         </div>
-        <!-- TAB: CALENDARIO -->
-        <div v-if="activeTab === 'calendario'">
-          <ul class="list-group list-group-flush">
-            <li v-for="p in partiteDaGiocare" :key="p.id" class="list-group-item py-3">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="text-muted small w-25">{{ formattaData(p.data_ora) }}</span>
-                <div class="d-flex justify-content-center align-items-center w-50">
-                  <span class="fw-bold text-end w-50">{{ p.squadra_casa?.nome }}</span>
-                  <span class="badge bg-secondary mx-3">VS</span>
-                  <span class="fw-bold text-start w-50">{{ p.squadra_trasferta?.nome }}</span>
-                </div>
-                <span class="w-25 text-end text-warning small fw-bold">PROGRAMMATA</span>
-              </div>
-            </li>
-          </ul>
-        </div>
 
-        <!-- TAB: NEWS -->
         <div v-if="activeTab === 'news'">
           <div class="list-group shadow-sm">
             <RouterLink v-for="n in notizie" :key="n.id" :to="`/notizie/${n.id}`" class="list-group-item list-group-item-action py-3 d-flex align-items-center text-decoration-none text-dark">
@@ -373,7 +432,7 @@ onMounted(() => fetchDettagli())
             </RouterLink>
           </div>
         </div>
-        <!-- TAB: MARCATORI -->
+
         <div v-if="activeTab === 'marcatori'">
           <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -397,7 +456,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: ASSIST -->
         <div v-if="activeTab === 'assist'">
           <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -441,10 +499,46 @@ onMounted(() => fetchDettagli())
 
 /* Stili per i Quadratini della Forma (V, N, P) */
 .forma-box { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-size: 0.75rem; color: white; }
-.forma-v { background-color: #198754; } /* Verde Vittoria */
-.forma-n { background-color: #ffc107; color: black; } /* Giallo Pareggio */
-.forma-p { background-color: #dc3545; } /* Rosso Sconfitta */
-.forma-empty { background-color: #e9ecef; color: #adb5bd; } /* Grigio Non Giocata */
+.forma-v { background-color: #198754; } 
+.forma-n { background-color: #ffc107; color: black; } 
+.forma-p { background-color: #dc3545; } 
+.forma-empty { background-color: #e9ecef; color: #adb5bd; } 
 
 .custom-link:hover { color: #198754 !important; }
+
+/* --- NUOVI STILI PER INTERATTIVITA' RISULTATI --- */
+.punteggio-box {
+  cursor: pointer;
+  user-select: none;
+  background-color: #f8f9fa;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+.punteggio-box:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  transform: scale(1.05);
+}
+
+.freccia-dettagli {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 10px;
+}
+.freccia-dettagli.ruotata {
+  transform: rotate(180deg);
+}
+
+.details-dropdown {
+  animation: slideDown 0.3s ease-out forwards;
+  transform-origin: top;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: scaleY(0); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+/* Nasconde la scrollbar orizzontale per il menu giornate */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
