@@ -216,7 +216,14 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
         <!--sticky-top      proprietà CSS "position: sticky", ovvero la barra scorre in basso con il documento finchè non rimane fissa in alto-->
         <div class="container">
             <!-- LOGO-->
-            <RouterLink class="navbar-brand fw-bold fs-3 text-success" to="/">TOPKICK</RouterLink> <!--Componente nativo della libreria Vue Router-->
+          <RouterLink class="navbar-brand d-flex align-items-center" to="/">
+        <img 
+        src="/logo.png" 
+        alt="Logo TopKick" 
+        class="me-2" 
+        style="height: 70px; width: auto; object-fit: contain; mix-blend-mode: screen;"
+         >
+        </RouterLink>  <!--Componente nativo della libreria Vue Router-->
             <!--<RouterLink>    a diff. di un tag tradizionale di ancoraggio (<a href>), intercetta l'evento clic e aggiorna l'URL e la vista dell'app. senza innescare chiamate HTTP e aggiornare la pag.-->
             <!--to="/"          def. il percorso di destinazione (la radice /) (se lo premi ritorni nella homepage)-->
             <!--fw-bold fs-3 text-success       (tipografia) 1°->grassetto | 2°-> dim. del carattere incrementata | 3° -> colore verde semantico |-->    
