@@ -110,7 +110,7 @@ onMounted(() => {
 
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-success">
             <h1 class="fw-bold">⭐ Le Mie Competizioni</h1>
         </div>
@@ -170,9 +170,14 @@ onMounted(() => {
                                 <p class="text-muted mb-4">Dimensione: <strong>{{ comp.numero_squadre }} squadre</strong></p>
 
                                 <div class="mt-auto d-flex justify-content-between">
-                                    <RouterLink :to="`/mie-competizioni/${comp.id}/squadre`" class="btn btn-primary btn-sm fw-bold">
-                                        Gestisci Squadre
-                                    </RouterLink>
+                                    <div>
+                                        <RouterLink :to="`/mie-competizioni/${comp.id}/squadre`" class="btn btn-primary btn-sm fw-bold me-2">
+                                            Gestisci Squadre
+                                        </RouterLink>
+                                        <RouterLink :to="`/mie-competizioni/${comp.id}/calendario`" class="btn btn-warning btn-sm fw-bold text-dark">
+                                            Gestisci calendario
+                                        </RouterLink>
+                                    </div>
                                     <button @click="eliminaCompetizione(comp.id)" class="btn btn-outline-danger btn-sm" title="Elimina">🗑️</button>
                                 </div>
                             </div>

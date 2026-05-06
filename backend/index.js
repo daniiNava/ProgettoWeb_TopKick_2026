@@ -569,7 +569,6 @@ app.post('/api/squadre/:id/giocatori', checkPremium, async (req, res) => {
         res.status(201).json({ message: "Giocatore aggiunto!", giocatore: data[0] });
 
     } catch (err) {
-        console.error("Error aggiunta giocatore:", err)
         res.status(500).json({ error: "Errore nell'aggiunta del giocatore" });
     }
 
@@ -592,6 +591,232 @@ app.delete('/api/giocatori/:id', checkPremium, async (req, res) => {
 
     } catch (error){
         res.status(500).json({ error: "Errore nell'eliminazione del giocatore"});
+    }
+});
+
+// ==============================================
+//      FASE 7.4 - GESTIONE CALENDARIO E PARTITE
+// ==============================================
+
+// (GET): Recupero delle squadre (per il menu a tendina) e di tutte le partite della competizione
+app.get('/api/mie-competizioni/:id/calendario', checkPremium, async (req, res) => {
+    const idCompetizione = req.params.id;
+
+    try {
+        // 1. Verifica che la competizione esista e sia dell'utente loggato
+        const { data: comp, error: compError } = await supabase
+            .from('competizioni')
+            .select('id, nome, creato_da')
+            .eq('id', idCompetizione)
+            .single();
+
+        if(compError || !comp) return res.status(404).json({ error: "Competizione non trovata" });
+        if(comp.creato_da !== req.session.user.id) return res.status(403).json({ error: "Non autorizzato per questa competizione" });
+        
+        // 2. Recupero delle squadre iscritte (Utili per il menu a tendina -> creazione calendario)
+        const { data: squadre, error: sqError } = await supabase
+            .from('squadre')
+            .select('id, nome, logo_url')
+            .eq('id_competizione', idCompetizione)
+            .order('nome', { ascending: true });
+
+        if(sqError) throw sqError;
+
+        // 3. Recupero delle partite già create (con il nome delle squadre grazie ad un JOIN)
+        const { data: partite, error: partiteError } = await supabase
+            .from('partite')
+            .select(`
+                *,
+                competizioni ( nome ),
+                squadra_casa:squadre!id_squadra_casa ( nome, logo_url ), 
+                squadra_trasferta:squadre!id_squadra_trasferta ( nome, logo_url ),
+                marcatori(id, 
+                    id_giocatore, 
+                    gol, 
+                    minuto, 
+                    tipo_gol, 
+                    id_assistman, 
+                    giocatore:giocatori!marcatori_id_giocatore_fkey(nome_cognome, id_squadra),
+                    assistman:giocatori!marcatori_id_assistman_fkey(nome_cognome)
+                )
+            `)
+            .eq('id_competizione', idCompetizione)
+            .order('giornata', { ascending: true })    // Ordiniamo la restituzione delle partite in base al risultato ...
+            .order('data_ora', { ascending: true });    // ... e in base alla data e ora
+            
+
+        if(partiteError) throw partiteError;
+
+        res.json({ competizione: comp, squadre: squadre || [], partite: partite || []  });
+    } catch (error) {
+        res.status(500).json({ error: "Errore nel recupero dei calendario" });
+    }
+
+});
+
+// (POST)
+app.post('/api/mie-competizioni/:id/partite', checkPremium, async (req, res) => {
+    const idCompetizione = req.params.id;
+    const { id_squadra_casa, id_squadra_trasferta, data_ora, giornata } = req.body;
+
+    // Controllo inserimento campi obbligatori
+    if(!id_squadra_casa || !id_squadra_trasferta || !data_ora || !giornata ) {
+        return res.status(400).json({ error: "Tutti i campi sono obbligatori!" });
+    }
+
+    if (id_squadra_casa === id_squadra_trasferta){
+        return res.status(400).json({ error: "Una squadra non può giocare contro se stessa!" });
+    }
+    
+    try {
+        // Controllo sicurezza omesso per brevita (si da per scontato che il frontend abbia l'ID giusto)
+        
+        // Inserimento nel DB
+        const { data, error } = await supabase
+            .from('partite')
+            .insert([{
+                id_competizione: idCompetizione,
+                id_squadra_casa,
+                id_squadra_trasferta,
+                data_ora,
+                giornata,
+                stato: 'programmata'    // Default
+            }])
+            .select(`
+                *,
+                squadra_casa:squadre!id_squadra_casa ( nome, logo_url ), 
+                squadra_trasferta:squadre!id_squadra_trasferta ( nome, logo_url )
+            `);
+
+        
+
+        if(error) throw error;
+        res.status(201).json({ message: "Partita aggiunta!", partita: data[0] });
+
+    } catch (err) {
+        res.status(500).json({ error: "Errore nell'aggiunta della partita" });
+    }
+
+});
+
+// (PUT): Aggiunta di un risultato
+app.put('/api/partite/:id', checkPremium, async (req, res) => {
+    const idPartita = req.params.id;
+    const { gol_casa, gol_trasferta, stato, lista_marcatori } = req.body;
+    
+    try {
+        // 1. Aggiornamento della partita
+        const { error: updateError } = await supabase
+            .from('partite')
+            .update({ gol_casa, gol_trasferta, stato })
+            .eq('id', idPartita);
+
+        if(updateError) throw updateError;
+
+        // 2. Eliminazione dei vecchi marcatori della partita corrente (pulizia)
+        const { error: deleteError } = await supabase
+            .from('marcatori')
+            .delete()
+            .eq('id_partita', idPartita);
+
+        if(deleteError) throw deleteError;
+
+        // 3. Inserimento dei nuovi marcatori (se ce ne sono)
+        if(lista_marcatori && lista_marcatori.length > 0){
+            const marcatoriDaInserire = lista_marcatori.map(m => ({
+                id_partita: idPartita,
+                id_giocatore: m.id_giocatore,
+                gol: 1,
+                minuto: m.minuto,
+                tipo_gol: m.tipo_gol,
+                id_assistman: m.id_assistman,
+            }));
+            
+            const { error: insertError } = await supabase
+                .from('marcatori')
+                .insert(marcatoriDaInserire);
+                
+            if(insertError) throw insertError;
+        }
+
+        // Esecuzione UPDATE finale (restituzione della partita aggiornata)
+        const { data, error } = await supabase
+            .from('partite')
+            .select(`
+                *,
+                squadra_casa:squadre!id_squadra_casa ( nome, logo_url ), 
+                squadra_trasferta:squadre!id_squadra_trasferta ( nome, logo_url ),
+                marcatori(id, 
+                    id_giocatore, 
+                    gol, 
+                    minuto, 
+                    tipo_gol, 
+                    id_assistman, 
+                    giocatore:giocatori!marcatori_id_giocatore_fkey(nome_cognome, id_squadra),
+                    assistman:giocatori!marcatori_id_assistman_fkey(nome_cognome)
+                )
+            `)
+            .eq('id', idPartita)
+            .single();
+
+        
+
+        if(error) throw error;
+        res.status(200).json({ message: "Risultato e marcatori aggiornati!", partita: data });
+
+    } catch (err) {
+        console.error("Errore PUT risultato/marcatori:", err);
+        // INIEZIONE DIAGNOSTICA
+        res.status(500).json({ 
+            error: "Errore nell'aggiornamento (Risultato+Marcatori)",
+            dettaglio_tecnico: err 
+        });
+    }
+});
+
+// (DELETE): Eliminazione di una partita
+app.delete('/api/partite/:id', checkPremium, async (req, res) => {
+    const idPartita = req.params.id
+    try {
+        const { error } = await supabase
+        .from('partite')
+        .delete()
+        .eq('id', idPartita)
+
+        if(error) throw error;
+        res.status(200).json({ message: "Partita eliminata con successo!" });
+
+    } catch (error){
+        res.status(500).json({ error: "Errore nell'eliminazione della partita"});
+    }
+});
+
+
+// (GET): Recupero dei giocatori delle due squadre (per poi selezionare i marcatori della partita corrente)
+app.get('/api/partite/:id/giocatori-disponibili', checkPremium, async (req, res) => {
+    const idPartita = req.params.id;
+
+    try{
+        // 1. Si trova la partita -> per recuperare le due squadre
+        const { data: partita, error: pError } = await supabase
+            .from('partite')
+            .select('id_squadra_casa, id_squadra_trasferta')
+            .eq('id', idPartita)
+            .single();
+
+        if(pError || !partita) throw pError;
+        
+        // 2. Recupero di tutti i giocatori che appartengono a una di queste due squadre
+        const { data: giocatori, error: gError } = await supabase
+            .from('giocatori')
+            .select('id, nome_cognome, id_squadra, ruolo')
+            .in('id_squadra', [partita.id_squadra_casa, partita.id_squadra_trasferta])
+            .order('ruolo', { ascending: true });
+
+        if(gError) throw gError;
+        res.json(giocatori);
+    } catch (error) {
+        res.status(500).json({ error: "Errore nel recupero dei giocatori" });
     }
 });
 
