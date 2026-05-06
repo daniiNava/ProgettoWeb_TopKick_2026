@@ -220,7 +220,9 @@ onMounted(() => fetchDettagli())
               <button class="btn btn-link text-success fs-4 p-0 ms-3 text-decoration-none" title="Aggiungi ai preferiti">☆</button>
             </h1>
             <p class="text-muted mb-0 fs-5">
-              Competizione: <strong>{{ squadra.competizioni?.nome || 'N.D.' }}</strong>
+              Competizione: <RouterLink :to="{ path: `/competizioni/${squadra.competizioni.id}`, query: { annata: annataSelezionata } }" style="text-decoration: none;color: inherit;">
+              <strong>{{ squadra.competizioni?.nome || 'N.D.' }}</strong>
+            </RouterLink>
             </p>
           </div>
         </div>
@@ -406,7 +408,7 @@ onMounted(() => fetchDettagli())
                   </td>
                   <td class="text-start fw-semibold">
                     <RouterLink :to="`/squadre/${sq.id}`" class="text-decoration-none text-dark d-flex align-items-center custom-link">
-                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="rounded-circle me-2 shadow-sm" style="width: 25px; height: 25px; object-fit: cover;">
+                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: auto; height: 25px;">
                       {{ sq.nome }}
                     </RouterLink>
                   </td>

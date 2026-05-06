@@ -250,7 +250,7 @@ onMounted(() => fetchDettagli())
     <div v-else-if="competizione">
       
       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
-        <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-4 rounded" style="width: 100px; height: 100px; object-fit: contain;">
+        <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-4" style="width: auto; height: 100px;">
         <div class="col">
           <h1 class="fw-bold mb-1">{{ competizione.nome }}</h1>
           <p class="text-muted mb-0 fs-5">{{ competizione.nazione || 'Internazionale' }}</p>
@@ -301,7 +301,7 @@ onMounted(() => fetchDettagli())
                   </td>
                   <td class="fw-semibold">
                     <RouterLink :to="`/squadre/${sq.id}`" class="text-decoration-none text-dark d-flex align-items-center custom-link">
-                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="rounded-circle me-2 shadow-sm" style="width: 25px; height: 25px; object-fit: cover;">
+                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: auto; height: 25px;">
                       {{ sq.nome }}
                     </RouterLink>
                   </td>
@@ -328,19 +328,43 @@ onMounted(() => fetchDettagli())
 
         <div v-if="activeTab === 'riepilogo'">
           <h5 class="fw-bold mb-3">Prossime Partite</h5>
+          <div v-if="prossimePartite.length === 0" class="text-muted p-3 bg-light rounded-3 text-center">
+            Nessuna partita in programma.
+          </div>
           <div class="row g-3">
-            <div v-for="p in prossimePartite" :key="p.id" class="col-md-6 col-lg-3">
-              <div class="card border-0 bg-light h-100 text-center p-3 shadow-sm rounded-4">
-                <small class="text-muted mb-2">{{ formattaData(p.data_ora) }}</small>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold text-truncate w-40">{{ p.squadra_casa?.nome }}</span>
-                  <span class="badge bg-secondary mx-1">VS</span>
-                  <span class="fw-bold text-truncate w-40">{{ p.squadra_trasferta?.nome }}</span>
+            <div v-for="partita in prossimePartite" :key="partita.id" class="col-md-6 col-lg-4">
+              <div class="card border-0 shadow-sm transition h-100">
+                <div class="card-body p-3">
+                  <div class="text-center mb-3">
+                    <span class="badge bg-light text-dark border fw-normal">
+                      {{ formattaData(partita.data_ora) }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="text-center" style="width: 35%;">
+                      <RouterLink :to="`/squadre/${partita.squadra_casa?.id}`" class="text-decoration-none text-dark custom-link">
+                        <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                        <div class="small text-truncate fw-bold">
+                          {{ partita.squadra_casa?.nome }}
+                        </div>
+                      </RouterLink>
+                    </div>
+                    <div class="fw-bold text-muted px-2 small">VS</div>
+                    <div class="text-center" style="width: 35%;">
+                      <RouterLink :to="`/squadre/${partita.squadra_trasferta?.id}`" class="text-decoration-none text-dark custom-link">
+                        <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                        <div class="small text-truncate fw-bold">
+                          {{ partita.squadra_trasferta?.nome }}
+                        </div>
+                      </RouterLink>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        
 
         <div v-if="activeTab === 'risultati' || activeTab === 'calendario'">
           
@@ -369,8 +393,10 @@ onMounted(() => fetchDettagli())
                   
                   <div class="d-flex align-items-center justify-content-between">
                     <div class="text-center" style="width: 35%;">
-                      <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
-                      <div class="fw-bold small text-truncate">{{ partita.squadra_casa?.nome }}</div>
+                      <RouterLink :to="`/squadre/${partita.squadra_casa?.id}`" class="text-decoration-none text-dark custom-link">
+                        <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                        <div class="fw-bold small text-truncate">{{ partita.squadra_casa?.nome }}</div>
+                      </RouterLink>
                     </div>
 
                     <div class="px-2 text-center punteggio-box p-2 rounded-3" @click="toggleDettagliPartita(partita.id)">
@@ -387,8 +413,10 @@ onMounted(() => fetchDettagli())
                     </div>
 
                     <div class="text-center" style="width: 35%;">
-                      <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
-                      <div class="fw-bold small text-truncate">{{ partita.squadra_trasferta?.nome }}</div>
+                      <RouterLink :to="`/squadre/${partita.squadra_trasferta?.id}`" class="text-decoration-none text-dark custom-link">
+                        <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
+                        <div class="fw-bold small text-truncate">{{ partita.squadra_trasferta?.nome }}</div>
+                      </RouterLink>
                     </div>
                   </div>
                 </div>

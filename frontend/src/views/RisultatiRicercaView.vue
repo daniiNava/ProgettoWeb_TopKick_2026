@@ -59,7 +59,7 @@ watch(() => route.query, () => {
                         :to="`/squadre/${squadra.id}`"
                         class="list-group-item list-group-item-action d-flex align-items-center text-decoration-none"
                     >
-                        <img :src="squadra.logo_url || 'https://via.placeholder.com/40'" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                        <img :src="squadra.logo_url || 'https://via.placeholder.com/40'" class="me-3" style="width: auto; height: 40px;">
                         <span class="fs-5 fw-semibold text-dark">{{ squadra.nome }}</span>
                     </RouterLink>
                 </div>
@@ -92,7 +92,7 @@ watch(() => route.query, () => {
                         :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }"
                         class="list-group-item list-group-item-action d-flex align-items-center text-decoration-none"
                     >
-                        <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                        <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="me-3" style="width: auto; height: 40px;">
                         <span class="fs-5 fw-semibold text-dark">{{ comp.nome }}</span>
                     </RouterLink>
                 </div>
