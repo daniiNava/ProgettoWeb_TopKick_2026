@@ -779,7 +779,7 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
     const annataRichiesta = req.query.annata || '25/26';
 
     try {
-        // 1. Recupero dati base competizione e partite
+        // 1. Dati base
         const { data: competizione } = await supabase.from('competizioni').select('*').eq('id', idCompetizione).single();
         
         const { data: partite } = await supabase.from('partite').select(`
@@ -788,7 +788,7 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
             squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
         `).eq('id_competizione', idCompetizione).eq('annata', annataRichiesta);
 
-        // 2. Recupero MARCATORI - AGGIORNATO con minuto, tipo_gol e id_partita
+        // 2. Recupero MARCATORI - Join implicito per ottenere id_squadra dai giocatori
         const { data: marcatoriRaw } = await supabase
             .from('marcatori')
             .select(`
@@ -796,20 +796,20 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
                 id_partita,
                 minuto,
                 tipo_gol,
-                marcatore_originale:id_giocatore(nome_cognome),
-                assistman_originale:id_assistman(nome_cognome),
+                marcatore_originale:id_giocatore(id, nome_cognome, id_squadra), 
+                assistman_originale:id_assistman(id, nome_cognome, id_squadra),
                 partita:id_partita!inner(id_competizione, annata)
             `)
             .eq('partita.id_competizione', idCompetizione)
             .eq('partita.annata', annataRichiesta);
 
-        // 3. Estrazione nomi unici (rimane uguale)
+        // 3. Estrazione nomi unici (per il recupero dei record completi dell'annata)
         const nomiGiocatori = [...new Set([
             ...(marcatoriRaw?.map(m => m.marcatore_originale?.nome_cognome) || []),
             ...(marcatoriRaw?.map(m => m.assistman_originale?.nome_cognome) || [])
         ].filter(Boolean))];
 
-        // 4. RECUPERO RECORD GIOCATORI MIRATO
+        // 4. Recupero record GIOCATORI dell'annata
         const { data: giocatoriAnnata } = await supabase
             .from('giocatori')
             .select(`
@@ -823,52 +823,48 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
             .eq('annata', annataRichiesta)
             .eq('squadra.id_competizione', idCompetizione);
 
+        // 5. Creazione Mappa con chiave composta (Nome + Squadra)
         const mappaGiocatori = {};
         giocatoriAnnata?.forEach(g => {
-            mappaGiocatori[g.nome_cognome] = g;
+            const key = `${g.nome_cognome}|${g.id_squadra}`;
+            mappaGiocatori[key] = g;
         });
 
-        // 5. Mappatura finale - AGGIUNTA dei campi per il frontend
+        // 6. Mappatura finale
         const marcatoriRisolti = (marcatoriRaw || []).map(m => {
-            const nomeM = m.marcatore_originale?.nome_cognome;
-            const nomeA = m.assistman_originale?.nome_cognome;
-            
-            // Troviamo il record "risolto" del giocatore
-            const giocatoreRisolto = mappaGiocatori[nomeM];
-            const assistmanRisolto = mappaGiocatori[nomeA];
+            const marcatoreObj = m.marcatore_originale;
+            const assistmanObj = m.assistman_originale;
+
+            // Usiamo i dati ottenuti dal join per creare la chiave di ricerca
+            const chiaveM = marcatoreObj ? `${marcatoreObj.nome_cognome}|${marcatoreObj.id_squadra}` : null;
+            const chiaveA = assistmanObj ? `${assistmanObj.nome_cognome}|${assistmanObj.id_squadra}` : null;
+
+            const giocatoreRisolto = chiaveM ? mappaGiocatori[chiaveM] : null;
+            const assistmanRisolto = chiaveA ? mappaGiocatori[chiaveA] : null;
 
             return {
                 id: m.id,
-                partita_id: m.id_partita, // FONDAMENTALE per il frontend
-                minuto: m.minuto,        // FONDAMENTALE
-                tipo_gol: m.tipo_gol,    // FONDAMENTALE (rigore, autogol, ecc.)
-                
-                // Associa il record del giocatore (che include id_squadra)
-                giocatore: giocatoreRisolto || (nomeM ? { nome_cognome: nomeM, squadra: { nome: 'N.D.' } } : null),
-                assistman: assistmanRisolto || (nomeA ? { nome_cognome: nomeA } : null)
+                partita_id: m.id_partita,
+                minuto: m.minuto,
+                tipo_gol: m.tipo_gol,
+                // Restituiamo il giocatore risolto (o fallback sui dati originali)
+                giocatore: giocatoreRisolto || (marcatoreObj ? { ...marcatoreObj, squadra: { nome: 'N.D.' } } : null),
+                assistman: assistmanRisolto || (assistmanObj ? { ...assistmanObj } : null)
             };
         });
-
-        // 6. Recupero notizie (rimane uguale)
-        const { data: notizie } = await supabase
-            .from('notizie')
-            .select('*')
-            .eq('id_competizione', idCompetizione)
-            .order('data_pubblicazione', { ascending: false });
 
         res.json({
             competizione,
             partite: partite || [],
             marcatori: marcatoriRisolti,
-            notizie: notizie || []
+            notizie: [] // Aggiungi qui la query notizie se serve
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("Errore dettagli competizione:", err);
         res.status(500).json({ error: "Errore interno" });
     }
 });
-
 
 // ==========================================
 // API PUBBLICHE: DETTAGLIO SQUADRA (AGGIORNATO CON MARCATORI)

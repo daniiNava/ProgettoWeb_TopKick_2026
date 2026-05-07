@@ -95,6 +95,15 @@ const partiteRaggruppate = computed(() => {
     })
     return gruppi
 })
+const formattaOrario = (dataIso) => {
+    if (!dataIso) return '--:--'
+    
+    const data = new Date(dataIso)
+    return data.toLocaleTimeString('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit'
+    })
+}
 
 onMounted(() => {
     fetchNotizie()
@@ -149,28 +158,28 @@ onMounted(() => {
                 
                 <div class="d-flex align-items-center bg-light p-1 rounded-pill shadow-sm w-auto">
                     
-                    <button @click="scorriDate(-1)" class="btn rounded-circle btn-light border d-flex align-items-center justify-content-center text-secondary transition-all hover-bg-gray ms-1" style="width: 38px; height: 38px; z-index: 2;">
+                    <button @click="scorriDate(-1)" class="btn rounded-circle btn-light border d-flex align-items-center justify-content-center text-secondary shadow-sm" style="width: 38px; height: 38px;">
                         <span class="fw-bold fs-5">‹</span>
                     </button>
 
-                    <div class="d-flex overflow-auto custom-scrollbar flex-nowrap mx-2" style="max-width: 60vw;">
+                    <div class="d-flex overflow-auto flex-nowrap mx-2" style="max-width: 55vw; scrollbar-width: none;">
                         <button 
                             v-for="giorno in dateList" 
                             :key="giorno.value"
                             @click="selezionaDataRapida(giorno.value)"
-                            :class="['btn rounded-pill px-3 px-md-4 py-2 flex-shrink-0 transition-all mx-1', dataSelezionata === giorno.value ? 'btn-success fw-bold text-white shadow' : 'btn-transparent text-secondary border-0 hover-bg-gray']"
+                            :class="['btn rounded-pill px-3 px-md-4 py-2 flex-shrink-0 mx-1 transition-all', dataSelezionata === giorno.value ? 'btn-success fw-bold text-white shadow' : 'btn-transparent text-secondary border-0']"
                         >
                             {{ giorno.label }}
                         </button>
                     </div>
 
-                    <button @click="scorriDate(1)" class="btn rounded-circle btn-light border d-flex align-items-center justify-content-center text-secondary transition-all hover-bg-gray me-1" style="width: 38px; height: 38px; z-index: 2;">
+                    <button @click="scorriDate(1)" class="btn rounded-circle btn-light border d-flex align-items-center justify-content-center text-secondary shadow-sm me-2" style="width: 38px; height: 38px;">
                         <span class="fw-bold fs-5">›</span>
                     </button>
                     
-                    <div class="ms-1 position-relative border-start ps-2 border-2 d-none d-sm-block">
-                        <input type="date" class="form-control rounded-pill border-0 bg-transparent text-secondary shadow-none cursor-pointer" v-model="dataSelezionata" @change="gestisciCambioCalendario" style="width: 40px; color: transparent;">
-                        <i class="position-absolute top-50 start-50 translate-middle pointer-events-none fs-5">📅</i>
+                    <div class="position-relative border-start ps-2 border-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 34px;">
+                        <input type="date" v-model="dataSelezionata" @change="gestisciCambioCalendario" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cp-pointer" style="z-index: 5; cursor: pointer;">
+                        <i class="fs-5">📅</i>
                     </div>
                 </div>
             </div>
@@ -186,23 +195,41 @@ onMounted(() => {
                     <ul class="list-group list-group-flush shadow-sm rounded-bottom border border-top-0">
                         <li v-for="partita in listaPartite" :key="partita.id" class="list-group-item d-flex justify-content-between align-items-center py-3 match-row transition-all">
                             
-                            <!-- SQUADRA CASA (Cliccabile) -->
+                            <!-- SQUADRA CASA -->
                             <RouterLink :to="'/squadre/' + partita.squadra_casa?.id" class="d-flex align-items-center justify-content-end text-decoration-none text-dark team-hover" style="flex: 1;">
                                 <span class="fw-semibold me-3 text-end d-none d-sm-block">{{ partita.squadra_casa?.nome }}</span>
                                 <span class="fw-semibold me-2 text-end d-block d-sm-none">{{ partita.squadra_casa?.nome?.substring(0,3).toUpperCase() }}</span>
-                                <img :src="partita.squadra_casa?.logo_url || 'https://via.placeholder.com/50?text=Logo'" alt="Casa" class="object-fit-contain logo-squadra" style="width: 40px; height: 40px;">
+                                
+                                <img :src="partita.squadra_casa?.logo_url || 'https://via.placeholder.com/50?text=Logo'" 
+                                    alt="Casa" 
+                                    class="object-fit-contain logo-squadra" 
+                                    style="width: 40px; height: 40px;">
                             </RouterLink>
 
-                            <div class="d-flex justify-content-center align-items-center mx-2 mx-md-4" style="min-width: 80px;">
-                                <span v-if="partita.stato === 'programmata'" class="badge bg-secondary px-3 py-2 rounded-pill fs-6 text-white-50">VS</span>
-                                <span v-else class="badge bg-black text-success px-3 py-2 rounded-pill fs-5 shadow-sm border border-success">
-                                    {{ partita.gol_casa }} - {{ partita.gol_trasferta }}
-                                </span>
+                            <!-- BLOCCO CENTRALE: ORARIO E RISULTATO -->
+                            <div class="d-flex flex-column align-items-center mx-2 mx-md-4" style="min-width: 90px;">
+                                <!-- Orario formattato tramite la funzione costante -->
+                                <small class="text-secondary fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                    {{ formattaOrario(partita.data_ora) }}
+                                </small>
+
+                                <div class="d-flex justify-content-center align-items-center w-100">
+                                    <span v-if="partita.stato === 'programmata'" class="badge bg-secondary px-3 py-2 rounded-pill fs-6 text-white-50">
+                                        VS
+                                    </span>
+                                    <span v-else class="badge bg-black text-success px-3 py-2 rounded-pill fs-5 shadow-sm border border-success">
+                                        {{ partita.gol_casa }} - {{ partita.gol_trasferta }}
+                                    </span>
+                                </div>
                             </div>
 
-                            <!-- SQUADRA TRASFERTA (Cliccabile) -->
+                            <!-- SQUADRA TRASFERTA -->
                             <RouterLink :to="'/squadre/' + partita.squadra_trasferta?.id" class="d-flex align-items-center justify-content-start text-decoration-none text-dark team-hover" style="flex: 1;">
-                                <img :src="partita.squadra_trasferta?.logo_url || 'https://via.placeholder.com/50?text=Logo'" alt="Trasferta" class="object-fit-contain logo-squadra" style="width: 40px; height: 40px;">
+                                <img :src="partita.squadra_trasferta?.logo_url || 'https://via.placeholder.com/50?text=Logo'" 
+                                    alt="Trasferta" 
+                                    class="object-fit-contain logo-squadra" 
+                                    style="width: 40px; height: 40px;">
+                                
                                 <span class="fw-semibold ms-3 text-start d-none d-sm-block">{{ partita.squadra_trasferta?.nome }}</span>
                                 <span class="fw-semibold ms-2 text-start d-block d-sm-none">{{ partita.squadra_trasferta?.nome?.substring(0,3).toUpperCase() }}</span>
                             </RouterLink>

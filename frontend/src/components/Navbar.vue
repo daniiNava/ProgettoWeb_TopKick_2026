@@ -297,24 +297,32 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                             <span v-else>👤 Profilo</span>                                      
                         </button>
 
-                        <ul class="dropdown-menu dropdown-menu-end" :class="{ 'show': isDropdownOpen }"> 
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;"> 
                             <template v-if="!utenteLoggato">            
                                 <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
-                                        Accedi / Registrati                 
+                                    <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>Accedi / Registrati                 
                                     </a>
                                 </li>
                             </template>
 
                             <template v-else>
-                                <li><RouterLink class="dropdown-item" to="/profilo" @click="isDropdownOpen = false">Il mio Profilo</RouterLink></li>
+                                <li>
+                                    <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
+                                        <i class="bi bi-person me-2"></i>Il mio Profilo
+                                    </RouterLink>
+                                </li>
                                 <li v-if="utenteLoggato.ruolo === 'premium'">
-                                    <RouterLink class="dropdown-item" to="/mie-competizioni" @click="isDropdownOpen = false">
-                                        Le mie Competizioni
+                                    <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
+                                        <i class="bi bi-trophy me-2"></i>Le mie Competizioni
                                     </RouterLink>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="#" @click.prevent="handleLogout">Esci</a></li>
+                                <li>
+                                    <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
+                                        <i class="bi bi-box-arrow-left me-2"></i>Esci
+                                    </a>
+                                </li>
                             </template>
                         </ul>
                     </div>
