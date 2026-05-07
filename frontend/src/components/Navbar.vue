@@ -209,7 +209,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 </script>
 
 <template>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-1"> 
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2"> 
         <div class="container-fluid px-4 d-flex align-items-center">
             
             <RouterLink class="navbar-brand d-flex align-items-center" to="/">
@@ -217,7 +217,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                     src="/logo.png" 
                     alt="Logo TopKick" 
                     class="me-2" 
-                    style="height: 100px; width: auto; object-fit: contain; mix-blend-mode: screen;"
+                    style="height: 80px; width: auto; object-fit: contain; mix-blend-mode: screen;"
                 >
             </RouterLink>
 

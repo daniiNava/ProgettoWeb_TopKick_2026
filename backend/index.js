@@ -90,8 +90,8 @@ app.get('/api/partite', async (req, res) => {
             .select(`
                 id, data_ora, gol_casa, gol_trasferta, stato,
                 competizioni ( nome ),
-                squadra_casa:squadre!id_squadra_casa ( nome, logo_url ), 
-                squadra_trasferta:squadre!id_squadra_trasferta ( nome, logo_url )
+                squadra_casa:squadre!id_squadra_casa ( id, nome, logo_url ), 
+                squadra_trasferta:squadre!id_squadra_trasferta ( id, nome, logo_url )
             `)
             .gte('data_ora', `${dataRichiesta}T00:00:00`)
             .lte('data_ora', `${dataRichiesta}T23:59:59`)
