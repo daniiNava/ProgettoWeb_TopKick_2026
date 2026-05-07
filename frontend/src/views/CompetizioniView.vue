@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const competizioni = ref([])
 const partite = ref([])
 const caricamento = ref(true)
+const ricerca = ref('') // Aggiunta per coerenza con news
 
 // Variabili per l'Annata
 const annataSelezionata = ref('25/26')
@@ -17,7 +18,6 @@ const fetchDati = async () => {
       const data = await response.json()
       competizioni.value = data.competizioni
       partite.value = data.partite
-      console.log(data)
     }
   } catch (error) {
     console.error("Errore:", error)
@@ -26,15 +26,18 @@ const fetchDati = async () => {
   }
 }
 
+// Filtro per la ricerca (Pattern Notizie)
+const competizioniFiltrate = computed(() => {
+  return competizioni.value.filter(c => 
+    c.nome.toLowerCase().includes(ricerca.value.toLowerCase())
+  )
+})
 
-
-// Funzione che calcola la classifica per una specifica competizione (VERSIONE SICURA)
 const calcolaClassifica = (idComp) => {
   const classifica = {}
   const partiteComp = partite.value.filter(p => p.id_competizione === idComp)
 
   partiteComp.forEach(p => {
-    // CONTROLLO FONDAMENTALE: Procediamo solo se la partita ha entrambe le squadre
     if (p.squadra_casa && p.squadra_trasferta) {
       [p.squadra_casa, p.squadra_trasferta].forEach(sq => {
         if (!classifica[sq.id]) {
@@ -62,17 +65,14 @@ const calcolaClassifica = (idComp) => {
   })
 }
 
-// Restituisce solo le prime 6 squadre per ogni competizione
 const top6PerCompetizione = computed(() => {
   const result = {}
   competizioni.value.forEach(c => {
-    // Assicuriamoci che restituisca sempre un array, anche vuoto
     result[c.id] = calcolaClassifica(c.id).slice(0, 6) || []
   })
   return result
 })
 
-// Funzione per il colore del badge posizione
 const getBadgeClass = (index) => {
   if (index < 4) return 'badge-champions'
   if (index === 4) return 'badge-europa'
@@ -86,65 +86,97 @@ onMounted(() => fetchDati())
 <template>
   <div class="container py-5">
     
-    <!-- HEADER CON TITOLO E MENU A TENDINA -->
-    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-success">
-      <h1 class="fw-bold mb-0">Tutte le Competizioni</h1>
+    <!-- HEADER (Pattern Notizie: Titolo a sinistra, Filtri a destra) -->
+    <div class="row align-items-center mb-5 border-bottom pb-4 border-success">
+      <div class="col-lg-6">
+          <h1 class="fw-bold text-success mb-0">Campionati & Coppe</h1>
+          <p class="text-muted">Classifiche in tempo reale della stagione</p>
+      </div>
       
-      <div>
-        <label class="form-label text-muted small fw-bold mb-1 d-block text-end">Stagione</label>
-        <select class="form-select border-success fw-bold w-auto" v-model="annataSelezionata" @change="fetchDati">
-          <option v-for="annata in annateDisponibili" :key="annata" :value="annata">
-            {{ annata }}
-          </option>
-        </select>
+      <div class="col-lg-6">
+          <div class="row g-2">
+              <div class="col-md-8">
+                  <input 
+                      v-model="ricerca" 
+                      type="text" 
+                      class="form-control border-success" 
+                      placeholder="Cerca campionato (es: Serie A...)"
+                  >
+              </div>
+              <div class="col-md-4">
+                  <select class="form-select border-success fw-bold" v-model="annataSelezionata" @change="fetchDati">
+                    <option v-for="annata in annateDisponibili" :key="annata" :value="annata">
+                      {{ annata }}
+                    </option>
+                  </select>
+              </div>
+          </div>
       </div>
     </div>
 
     <!-- CARICAMENTO -->
-    <div v-if="caricamento" class="text-center my-5">
+    <div v-if="caricamento" class="text-center my-5 py-5">
       <div class="spinner-border text-success" role="status"></div>
+      <p class="mt-2 text-muted">Aggiornamento classifiche...</p>
     </div>
 
     <!-- GRIGLIA COMPETIZIONI -->
     <div v-else class="row g-4">
       
-      <div v-if="competizioni.length === 0" class="alert alert-info text-center w-100">
-        Nessuna competizione presente nel database.
+      <!-- Caso Nessun Risultato -->
+      <div v-if="competizioniFiltrate.length === 0" class="alert alert-info text-center w-100">
+        Nessuna competizione trovata per "{{ ricerca }}" nella stagione {{ annataSelezionata }}.
       </div>
 
-      <div v-for="comp in competizioni" :key="comp.id" class="col-lg-6">
-        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+      <!-- Card Singola Competizione -->
+      <div v-for="comp in competizioniFiltrate" :key="comp.id" class="col-lg-6">
+        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden comp-card">
           
+          <!-- Accent Line superiore (Pattern Verde) -->
+          <div class="bg-success" style="height: 4px;"></div>
+
           <!-- Header Card -->
-          <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+          <div class="card-header bg-white border-bottom-0 pt-4 pb-3 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-              <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="me-3" style="width: auto; height: 40px;">
-              <h4 class="fw-bold mb-0">{{ comp.nome }}</h4>
+              <img :src="comp.logo_url || 'https://via.placeholder.com/40'" class="me-3" style="width: auto; height: 45px; object-fit: contain;">
+              <div>
+                <h4 class="fw-bold mb-0 text-dark">{{ comp.nome }}</h4>
+                <small class="text-muted">Stagione {{ annataSelezionata }}</small>
+              </div>
             </div>
-            <RouterLink :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
-              Vedi tutta ➔
+            <RouterLink :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
+              Classifica Completa ➔
             </RouterLink>
           </div>
 
           <!-- Body Card (Mini Classifica) -->
-          <div class="card-body">
-            <!-- Il ?. previene il crash se l'array non è ancora pronto -->
-            <div v-if="!top6PerCompetizione[comp.id] || top6PerCompetizione[comp.id].length === 0" class="text-muted text-center py-3">              Nessuna partita giocata nella stagione {{ annataSelezionata }}.
+          <div class="card-body pt-0">
+            <div v-if="!top6PerCompetizione[comp.id] || top6PerCompetizione[comp.id].length === 0" class="text-muted text-center py-4 bg-light rounded-3">
+               Nessun dato disponibile per questa stagione.
             </div>
             
-            <table v-else class="table table-borderless align-middle mb-0">
+            <table v-else class="table table-hover align-middle mb-0">
+              <thead>
+                <tr class="text-muted small uppercase">
+                  <th style="width: 40px;">Pos</th>
+                  <th>Squadra</th>
+                  <th class="text-end">Punti</th>
+                </tr>
+              </thead>
               <tbody>
-                <tr v-for="(sq, index) in top6PerCompetizione[comp.id]" :key="sq.id" class="border-bottom">
-                  <td style="width: 40px;">
-                    <div class="pos-badge" :class="getBadgeClass(index)">{{ index + 1 }}.</div>
+                <tr v-for="(sq, index) in top6PerCompetizione[comp.id]" :key="sq.id">
+                  <td>
+                    <div class="pos-badge" :class="getBadgeClass(index)">{{ index + 1 }}</div>
                   </td>
                   <td>
                     <RouterLink :to="`/squadre/${sq.id}`" class="text-decoration-none text-dark fw-semibold d-flex align-items-center custom-link">
-                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: auto; height: 25px;">
+                      <img :src="sq.logo || 'https://via.placeholder.com/25'" class="me-2" style="width: 25px; height: 25px; object-fit: contain;">
                       {{ sq.nome }}
                     </RouterLink>
                   </td>
-                  <td class="text-end fw-bold fs-5">{{ sq.punti }} <span class="text-muted fs-6 fw-normal">pt</span></td>
+                  <td class="text-end fw-bold">
+                    <span class="fs-5">{{ sq.punti }}</span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -157,21 +189,42 @@ onMounted(() => fetchDati())
 </template>
 
 <style scoped>
-/* Stili personalizzati per i badge delle posizioni */
+/* Transizione card come nelle notizie */
+.comp-card {
+    transition: all 0.3s ease;
+}
+.comp-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important;
+}
+
+/* Badge posizioni circolari e moderni */
 .pos-badge {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 50%;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
+
 .badge-champions { background-color: #004684; color: white; }
-.badge-europa { background-color: #8b0021; color: white; }
-.badge-conference { background-color: #b8860b; color: white; }
-.badge-default { background-color: #f8f9fa; color: #6c757d; }
+.badge-europa { background-color: #de7000; color: white; }
+.badge-conference { background-color: #198754; color: white; }
+.badge-default { background-color: #f1f3f5; color: #495057; }
 
 .custom-link:hover { color: #198754 !important; }
+
+/* Stile tabella */
+.table thead th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: none;
+}
+.table td {
+  border-color: #f8f9fa;
+  padding: 10px 0;
+}
 </style>

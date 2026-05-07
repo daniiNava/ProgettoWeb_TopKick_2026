@@ -27,6 +27,9 @@ const partiteEspanse = ref([])
 const mostraTuttiRisultati = ref(false)
 const mostraTuttoCalendario = ref(false)
 
+// Variabile per la stellina dei preferiti (simulata per ora, poi andrà collegata al DB/Localstorage)
+const isPreferita = ref(false)
+
 const pluraleRuolo = {
   'Portiere': 'Portieri',
   'Difensore': 'Difensori',
@@ -67,6 +70,12 @@ const fetchDettagli = async () => {
   }
 }
 
+// Funzione per la stellina
+const togglePreferito = () => {
+  isPreferita.value = !isPreferita.value
+  // Qui in futuro potrai fare una fetch al backend (es. POST /api/utente/preferiti) per salvare la scelta nel DB
+}
+
 // Se l'utente cambia annata dal menu a tendina
 watch(annataSelezionata, (newVal, oldVal) => {
   if (newVal !== oldVal) {
@@ -80,6 +89,8 @@ watch(annataSelezionata, (newVal, oldVal) => {
 // Se l'utente clicca su un'altra squadra (l'URL cambia)
 watch(idSquadra, () => {
   activeTab.value = 'riepilogo' // Resetta la tab
+  // In futuro qui andrà controllato dal server se la nuova squadra è nei preferiti dell'utente
+  isPreferita.value = false 
   fetchDettagli()
 })
 
@@ -220,27 +231,30 @@ onMounted(() => fetchDettagli())
 
     <div v-else-if="squadra">
       
-      <!-- HEADER -->
       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
         <div class="d-flex align-items-center">
           <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-4 rounded" style="width: 100px; height: 100px; object-fit: contain;">
           <div>
             <h1 class="fw-bold mb-1 d-flex align-items-center">
               {{ squadra.nome }}
-              <button class="btn btn-link text-success fs-4 p-0 ms-3 text-decoration-none" title="Aggiungi ai preferiti">☆</button>
+              
+              <button 
+                class="btn btn-link fs-4 p-0 ms-3 text-decoration-none transition-all" 
+                :class="isPreferita ? 'text-warning' : 'text-success'"
+                @click="togglePreferito" 
+                :title="isPreferita ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
+                style="outline: none; box-shadow: none;"
+              >
+                {{ isPreferita ? '★' : '☆' }}
+              </button>
             </h1>
+            
             <p class="text-muted mb-0 fs-5">
-<<<<<<< HEAD
               Competizione: 
-              <RouterLink v-if="squadra.competizioni" :to="`/competizioni/${squadra.id_competizione}`" class="text-decoration-none text-dark custom-link fw-bold">
+              <RouterLink v-if="squadra.competizioni" :to="{ path: `/competizioni/${squadra.competizioni.id}`, query: { annata: annataSelezionata } }" class="text-decoration-none text-dark custom-link fw-bold">
                 {{ squadra.competizioni.nome }}
               </RouterLink>
               <strong v-else>N.D.</strong>
-=======
-              Competizione: <RouterLink :to="{ path: `/competizioni/${squadra.competizioni.id}`, query: { annata: annataSelezionata } }" style="text-decoration: none;color: inherit;">
-              <strong>{{ squadra.competizioni?.nome || 'N.D.' }}</strong>
-            </RouterLink>
->>>>>>> 189ba91899076b1432ba0a163240b5fb02ba2a1f
             </p>
           </div>
         </div>
@@ -255,7 +269,6 @@ onMounted(() => fetchDettagli())
         </div>
       </div>
 
-      <!-- TABS -->
       <ul class="nav nav-tabs mb-4 border-bottom-2 flex-nowrap overflow-auto" style="white-space: nowrap;">
         <li class="nav-item" v-for="tab in ['riepilogo', 'risultati', 'calendario', 'classifica', 'rosa', 'news']" :key="tab">
           <a class="nav-link fw-bold text-uppercase px-4" 
@@ -272,7 +285,6 @@ onMounted(() => fetchDettagli())
           <div class="spinner-border text-success" role="status"></div>
         </div>
 
-        <!-- TAB: RIEPILOGO -->
         <div v-if="activeTab === 'riepilogo'">
           <h5 class="fw-bold mb-3">Prossime Partite</h5>
           <div v-if="prossimePartite.length === 0" class="text-muted">Nessuna partita in programma.</div>
@@ -284,7 +296,6 @@ onMounted(() => fetchDettagli())
                     <span class="badge bg-light text-dark border fw-normal">{{ formattaData(partita.data_ora) }}</span>
                   </div>
                   <div class="d-flex align-items-center justify-content-between">
-                    <!-- SQUADRA CASA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_casa?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                       <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_casa === squadra.id, 'fw-bold text-dark': partita.id_squadra_casa !== squadra.id}">
@@ -294,7 +305,6 @@ onMounted(() => fetchDettagli())
                     
                     <div class="fw-bold text-muted px-3">VS</div>
                     
-                    <!-- SQUADRA TRASFERTA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_trasferta?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                        <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_trasferta === squadra.id, 'fw-bold text-dark': partita.id_squadra_trasferta !== squadra.id}">
@@ -308,7 +318,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: RISULTATI -->
         <div v-if="activeTab === 'risultati'">
           <div v-if="partiteGiocate.length === 0" class="text-muted text-center py-4">Nessun risultato disponibile.</div>
           <div class="row g-3">
@@ -319,7 +328,6 @@ onMounted(() => fetchDettagli())
                     <span class="badge bg-light text-dark border fw-normal">{{ formattaData(partita.data_ora) }}</span>
                   </div>
                   <div class="d-flex align-items-center justify-content-between">
-                    <!-- SQUADRA CASA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_casa?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                       <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_casa === squadra.id, 'fw-bold text-dark': partita.id_squadra_casa !== squadra.id}">
@@ -335,7 +343,6 @@ onMounted(() => fetchDettagli())
                       </div>
                     </div>
 
-                    <!-- SQUADRA TRASFERTA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_trasferta?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                       <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_trasferta === squadra.id, 'fw-bold text-dark': partita.id_squadra_trasferta !== squadra.id}">
@@ -345,7 +352,6 @@ onMounted(() => fetchDettagli())
                   </div>
                 </div>
                 
-                <!-- TENDINA MARCATORI -->
                 <div v-if="partiteEspanse.includes(partita.id)" class="card-footer bg-white border-top p-3 details-dropdown">
                   <div class="row text-muted small">
                     <div class="col-6 text-end pe-3 border-end">
@@ -377,7 +383,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: CALENDARIO -->
         <div v-if="activeTab === 'calendario'">
           <div v-if="partiteDaGiocare.length === 0" class="text-muted text-center py-4">Nessuna partita in programma.</div>
           <div class="row g-3">
@@ -388,7 +393,6 @@ onMounted(() => fetchDettagli())
                     <span class="badge bg-light text-dark border fw-normal">{{ formattaData(partita.data_ora) }}</span>
                   </div>
                   <div class="d-flex align-items-center justify-content-between">
-                    <!-- SQUADRA CASA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_casa?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_casa?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                       <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_casa === squadra.id, 'fw-bold text-dark': partita.id_squadra_casa !== squadra.id}">
@@ -398,7 +402,6 @@ onMounted(() => fetchDettagli())
                     
                     <div class="fw-bold text-muted px-3">VS</div>
                     
-                    <!-- SQUADRA TRASFERTA CLICCABILE -->
                     <RouterLink :to="`/squadre/${partita.squadra_trasferta?.id}`" class="text-center text-decoration-none custom-link" style="width: 35%;">
                       <img :src="partita.squadra_trasferta?.logo_url" class="img-fluid mb-2" style="max-height: 40px; object-fit: contain;">
                       <div class="small text-truncate" :class="{'text-success fw-bold': partita.id_squadra_trasferta === squadra.id, 'fw-bold text-dark': partita.id_squadra_trasferta !== squadra.id}">
@@ -418,7 +421,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: CLASSIFICA -->
         <div v-if="activeTab === 'classifica'">
           <div v-if="classificaCalcolata.length === 0" class="text-muted text-center py-4">Classifica non disponibile.</div>
           <div v-else class="table-responsive">
@@ -467,7 +469,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: ROSA -->
         <div v-if="activeTab === 'rosa'">
           <div v-if="giocatori.length === 0" class="text-muted text-center py-4">Nessun giocatore in rosa.</div>
           <div v-else class="row g-4">
@@ -482,7 +483,6 @@ onMounted(() => fetchDettagli())
           </div>
         </div>
 
-        <!-- TAB: NEWS -->
         <div v-if="activeTab === 'news'">
           <div v-if="notizie.length === 0" class="text-muted text-center py-4">Nessuna notizia recente.</div>
           <div v-else class="list-group shadow-sm">
@@ -534,4 +534,7 @@ onMounted(() => fetchDettagli())
 
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Stile per gestire la transizione di colore della stella */
+.transition-all { transition: all 0.2s ease-in-out; }
 </style>

@@ -877,7 +877,8 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
 app.get('/api/squadre/:id/dettagli', async (req, res) => {
     const idSquadra = req.params.id;
     const annataRichiesta = req.query.annata || '25/26'; 
-
+    console.log("CHIAMATA API DETTAGLI - ID SQUADRA RICEVUTO:", idSquadra);
+    
     try {
         // 1. Dati della Squadra
         const { data: squadra, error: sqError } = await supabase

@@ -209,56 +209,34 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 </script>
 
 <template>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top"> 
-        <!--navbar      inizializza il componente-->
-        <!--navbar-expand-lg    definisce il comportamento responsive. La barra rimane compressa (hamburger menu) sui mobile e si espande orizz. dopo la L (992 px)-->
-        <!--navbar-dark bg-dark     applica una combinazione cromatica predefinita. Colore nero(2°), con il colore del carattere e dei simboli invertiti (1°) -->
-        <!--sticky-top      proprietà CSS "position: sticky", ovvero la barra scorre in basso con il documento finchè non rimane fissa in alto-->
-        <div class="container">
-            <!-- LOGO-->
-          <RouterLink class="navbar-brand d-flex align-items-center" to="/">
-        <img 
-        src="/logo.png" 
-        alt="Logo TopKick" 
-        class="me-2" 
-        style="height: 70px; width: auto; object-fit: contain; mix-blend-mode: screen;"
-         >
-        </RouterLink>  <!--Componente nativo della libreria Vue Router-->
-            <!--<RouterLink>    a diff. di un tag tradizionale di ancoraggio (<a href>), intercetta l'evento clic e aggiorna l'URL e la vista dell'app. senza innescare chiamate HTTP e aggiornare la pag.-->
-            <!--to="/"          def. il percorso di destinazione (la radice /) (se lo premi ritorni nella homepage)-->
-            <!--fw-bold fs-3 text-success       (tipografia) 1°->grassetto | 2°-> dim. del carattere incrementata | 3° -> colore verde semantico |-->    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-1"> 
+        <div class="container-fluid px-4 d-flex align-items-center">
+            
+            <RouterLink class="navbar-brand d-flex align-items-center" to="/">
+                <img 
+                    src="/logo.png" 
+                    alt="Logo TopKick" 
+                    class="me-2" 
+                    style="height: 100px; width: auto; object-fit: contain; mix-blend-mode: screen;"
+                >
+            </RouterLink>
 
-            <!-- Bottone Hamburger per il mobile -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <!--navbar-toggler  per creare il bottone hamburger-->
-            <!--data-bs-toggle="collapse" data-bs-target="#navbarNav        attributi HTML per interfaccia il markup con il codice JS integrato in Bootstrap-->
-            <!-- 1° Assegna al nottone la funzionalità di att/disattivazione di un elemento collassabile-->
-            <!-- 2° Crea un collegamento univoco tramite selettore ID -->
                 <span class="navbar-toggler-icon"></span> 
             </button>
 
-            <!--Allineamento e Form di Ricerca-->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- LINK CENTRALI-->
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-4"> <!-- allineamnto dei collegamenti centrali utilizzando le classi di spaziatura-->
-                <!--me-auto         spinge tutti gli elementi successivi verso il margine dx-->    
-                <!--mb-2 mb-lg-0    applica un margine inferiore di scala valore 2 tra gli elementi, azzerandolo quando la barra si espande su schermi grandi-->    
-                <!--ms-4            applica un margine sinistro di scala valore 4 (distanzia il link dal logo)-->   
+            <div class="collapse navbar-collapse align-items-center" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-4 align-items-lg-center"> 
                     <li class="nav-item">
-                        <RouterLink class="nav-link" to="/notizie">Notizie</RouterLink>
+                        <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
                     </li>
                     <li class="nav-item">
-                        <RouterLink class="nav-link" to="/competizioni">Competizioni</RouterLink>
+                        <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
                     </li>
                 </ul>
 
-                <!-- BARRA DI RICERCA -->
-                <form class="d-flex me-3 position-relative" role="search" @submit.prevent="eseguiRicerca"> 
-                <!-- @submit.prevent blocca il refresh della pagina e lancia la nostra funzione di ricerca-->
-                <!--d-flex  forza l'elemento ad adottare il modello di layout Flexbox allineando l'input di resto e il pulsante di ricerca-->
-                <!--role="search"   fornisce contesto semantico per le tecnologie assistive--> 
-                    <!--costruiamo la tendina per selezionare la categoria di ricerca, collegata a tipoRicerca-->
-                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> <!-- v model permette di fare un collegamento a doppio senso, ovvero collega in tempo reale la scelta dell'utente ad una variabile javaScript detta tipoRicerca, se l'utente clicca su squadre, giocatori, ...la variabile si aggiorna all istante-->
+                <form class="d-flex align-items-center me-3 position-relative" role="search" @submit.prevent="eseguiRicerca"> 
+                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
                         <option value="tutto">Tutto</option>
                         <option value="squadre">Squadre</option>
                         <option value="giocatori">Giocatori </option>
@@ -304,47 +282,30 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                         </ul>
                     </div>
 
-
-                    <!--il type=search dice al browser che questo non è un campo di testo normale, ma una ricerca apparirà duqneu sullo tastiera dello smartphone una lente d'ingrandimento -->
-                    <!-- placeholder= cerca-> testo fantasma che suggerisce all'utente cosa fare prima che inizi a scrivere-->
-                    <!--v-model=testoRicerca, come per la tendina ogni singola lettera che l'utente digita viene salvata istantaneamente-->
-                    <!-- required -> se l'utente lascia il campo vuoto, il browser lo bloccherà e apparira in un fumetto rosso con scritto compila questo campo-->
                     <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
                 </form>
 
-                <!-- IMPORTAZIONE (Tema) e PROFILO -->
-                 <div class="d-flex align-items-center">
-                    <!-- Bottone Tema: Mostra la Luna se è chiaro, il Sole se è scuro -->
-                    <button 
-                    @click="toggleTheme" 
-                    class="btn btn-outline-secondary border-0 fs-5 me-3" 
-                    :title="isDarkMode ? 'Passa al tema chiaro' : 'Passa al tema scuro'"
-                    >
-                        {{ isDarkMode ? '☀️' : '🌙' }}
-                    </button>
+                <div class="d-flex align-items-center">
+                    
 
-                    <!-- Gestione Profilo tramite approccio Vue.js NATIVO-->
                     <div class="nav-item dropdown">
-                        <button class="nav-link dropdown-toggle text-white border-0 bg-transparent" type="button" @click="toggleDropdown"> <!-- (ultimo) event listener sul click, richiamando la funzione che cambia lo stato del menu a tendina-->
-                            <span v-if="utenteLoggato">                                         <!-- parte aggiunta successivamente  ----- FASE 5 -----   -->
+                        <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center" type="button" @click="toggleDropdown"> 
+                            <span v-if="utenteLoggato">                                         
                                 👤 Ciao, {{ utenteLoggato.username }}
-                                <span v-if="utenteLoggato.ruolo === 'premium'">⭐</span>  <!--se l'utente si è loggato aggiungo un messaggio e se è ache premium aggiungo la stellina-->
+                                <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span>  
                             </span>
-                            <span v-else>👤 Profilo</span>                                      <!-- fine modifica fase 5-->
+                            <span v-else>👤 Profilo</span>                                      
                         </button>
 
-                        <ul class="dropdown-menu dropdown-menu-end" :class="{ 'show': isDropdownOpen }"> <!-- ("Menu ancora a destra") Non fa fuoriuscire il menu a tendina dallo schermo a dx, provando uno scorrimento laterale della pagina -->
-                                                                    <!--Permerro al Virtual DOM di Vue a Far mostrare il popup tramite la classe CSS show, questo solo se la variabile isDr... è true-->
-                            <!--SE NON LOGGATO: Aprire il popup-->  
-                            <template v-if="!utenteLoggato">            <!-- ----- FASE 5 ----- -->
+                        <ul class="dropdown-menu dropdown-menu-end" :class="{ 'show': isDropdownOpen }"> 
+                            <template v-if="!utenteLoggato">            
                                 <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> <!-- data-bs-... tutti e due servono per delegare JS per l'apertura della finestra modale-->
-                                        Accedi / Registrati                 <!-- @click... è un event listening che forza lo stato true alla variabile e fa aprire il modale con il form di Login e con "=false" fa chiudere poi il menu a tendina prima di aprire il popup-->
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
+                                        Accedi / Registrati                 
                                     </a>
                                 </li>
                             </template>
 
-                            <!--SE LOGGATO: Mostrare il menu utente-->
                             <template v-else>
                                 <li><RouterLink class="dropdown-item" to="/profilo" @click="isDropdownOpen = false">Il mio Profilo</RouterLink></li>
                                 <li v-if="utenteLoggato.ruolo === 'premium'">
@@ -362,39 +323,28 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
         </div>
     </nav>
 
-    <!--    ---- FASE 5 ----    -->
-    <!-- POPUP (modal) LOGIN / REGISTRAZIONE-->
     <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> 
-        <!-- modal fade: definisce il contenitore e applica una transizione CSS per l'apparizione graduale-->
-         <!--tabIndex e aria...: Attributi di accessibilità per screen reader e navigazione da tastiera, rimuovendo il div dal flusso del tasto Tab-->
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
 
-                <!-- Header (Dinamico) del Popup-->
                 <div class="modal-header text-white" :class="isLoginMode ? 'bg-success' : 'bg-primary'">
-                <!--Permette a Vue di valutare l'espress. JS e utilizza un operat. ternario per applicare la classe di background verde per login e blu per registr.-->
                     <h5 class="modal-title fw-bold" id="authModalLabel">
-                        {{ isLoginMode ? 'Bentornato su TOPKICK' : 'Crea un nuovo account' }}       <!--Varia dinamicamente anche il testo del titolo-->
+                        {{ isLoginMode ? 'Bentornato su TOPKICK' : 'Crea un nuovo account' }}       
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <!-- Body del Popup-->
                 <div class="modal-body p-4">
 
-                    <!-- GESTIONE ERRORI: Alert Reattivo-->
-                    <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert"> <!--se la stringa è vuota, l'avviso non viene montato nel DOM-->
-                    <!-- alert-danger   classe bootstrap per creare un riquadro rosso ad alta visibilità semantica-->    
+                    <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert"> 
                         <strong>Attenzione!</strong> {{ errorMessage }}
                         <button type="button" class="btn-close" @click="errorMessage = ''" aria-label="Close"></button>
-                        <!-- @click...  assegna al tastino "X" la funzione di svuotare la variabile, nascondendo l'avviso di errore, senza ricarca la pag.-->
                     </div>
 
-                    <!-- Form di Login-->
-                    <form v-if="isLoginMode" @submit.prevent="handleLogin">  <!--Intercetta l'evento di invio del form. Il .preventi blocca il comportamento predefinito del browser (ricaricamento della pag.) ed esegue la funzione-->
+                    <form v-if="isLoginMode" @submit.prevent="handleLogin">  
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Email</label>
-                            <input type="email" class="form-control" v-model="loginEmail" required> <!--Con v-model si crea il collegamento bidirezionale già spiegato, dove l'utente aggiorna istantaneamente la variabile-->
+                            <input type="email" class="form-control" v-model="loginEmail" required> 
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold">Password</label>
@@ -403,7 +353,6 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                         <button type="submit" class="btn btn-success w-100 fw-bold">Accedi</button>
                     </form>
 
-                    <!-- Form di Registrazione-->
                     <form v-else @submit.prevent="handleRegister">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Username</label>
@@ -422,12 +371,10 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 
                 </div>
 
-                <!-- Footer del Popup (Switch tra Reg e Login (Commutazione della vista)) -->
-                 <div class="modal-footer justify-content-center bg-light">
+                <div class="modal-footer justify-content-center bg-light">
                     <p class="mb-0" v-if="isLoginMode">
                         Non hai un account?
                         <a href="#" class="text-primary fw-bold text-decoration-none" @click.prevent="isLoginMode = false"> 
-                        <!--Il click sul link modifica la var. di stato, facendo switchare i colori e testi del popup (tramite la rivalutazione dei v-if)-->
                             Registrati ora
                         </a>
                     </p>
@@ -441,13 +388,10 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
             </div>
         </div>
     </div>
-
 </template>
 
-
-
 <style>
-    /* Stile sfocato quando si apre il popup      ---- FASE 5 ---- */
+    /* Stile sfocato quando si apre il popup */
     .modal-backdrop {
         backdrop-filter: blur(5px);
         background-color: rgba(0, 0, 0, 0.6);
