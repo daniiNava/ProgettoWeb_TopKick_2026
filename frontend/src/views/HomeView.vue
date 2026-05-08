@@ -168,6 +168,7 @@ onMounted(() => {
                             :key="giorno.value"
                             @click="selezionaDataRapida(giorno.value)"
                             :class="['btn rounded-pill px-3 px-md-4 py-2 flex-shrink-0 mx-1 transition-all', dataSelezionata === giorno.value ? 'btn-success fw-bold text-white shadow' : 'btn-transparent text-secondary border-0']"
+                            style="min-width: 7vw;"
                         >
                             {{ giorno.label }}
                         </button>

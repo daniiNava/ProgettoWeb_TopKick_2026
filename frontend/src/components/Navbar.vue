@@ -161,8 +161,8 @@ const toggleDropdown = () => {
 const cercaLive= () => {
     clearTimeout(timeoutRicerca) // cancella il timer precedente se l'utente sta ancora scrivendo 
 
-    // se ha scritto meno di due caratteri nascondiamo la tendina 
-    if(testoRicerca.value.trim().length<2) {
+    // se ha scritto meno di tre caratteri nascondiamo la tendina 
+    if(testoRicerca.value.trim().length<3) {
         suggerimenti.value=null 
         return 
     }
@@ -217,7 +217,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                     src="/logo.png" 
                     alt="Logo TopKick" 
                     class="me-2" 
-                    style="height: 80px; width: auto; object-fit: contain; mix-blend-mode: screen;"
+                    style="height: 70px; width: auto; object-fit: contain; mix-blend-mode: screen;"
                 >
             </RouterLink>
 
