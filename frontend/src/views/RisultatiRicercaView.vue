@@ -70,8 +70,8 @@ watch(() => route.query, () => {
                 <div class="list-group shadow-sm">
                     <RouterLink 
                         v-for="giocatore in risultati.giocatori" 
-                        :key="giocatore.id" 
-                        :to="`/giocatori/${giocatore.id}`" 
+                        :key="giocatore.nome_cognome" 
+                        :to="`/giocatori/${giocatore.nome_cognome}`" 
                         class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-decoration-none"
                     >
                         <div>

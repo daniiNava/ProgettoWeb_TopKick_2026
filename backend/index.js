@@ -905,7 +905,13 @@ app.get('/api/ricerca', async (req, res) => {
                 .from('giocatori')
                 .select('id, nome_cognome, ruolo, squadre(nome)')
                 .ilike('nome_cognome', searchTerm);
-            risultati.giocatori=data || [];
+            listaUnica = []
+            if (data) {
+                listaUnica = data.filter((giocatore, index, self) =>
+                    index === self.findIndex((g) => g.nome_cognome === giocatore.nome_cognome)
+                );
+            }
+            risultati.giocatori = listaUnica;
          }
          //cerco nelle competizioni
         if (tipo==='tutto' || tipo==='competizioni') {
@@ -1060,7 +1066,6 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
             const marcatoreObj = m.marcatore_originale;
             const assistmanObj = m.assistman_originale;
 
-            // Usiamo i dati ottenuti dal join per creare la chiave di ricerca
             const chiaveM = marcatoreObj ? `${marcatoreObj.nome_cognome}|${marcatoreObj.id_squadra}` : null;
             const chiaveA = assistmanObj ? `${assistmanObj.nome_cognome}|${assistmanObj.id_squadra}` : null;
 
@@ -1072,17 +1077,27 @@ app.get('/api/competizioni/:id/dettagli', async (req, res) => {
                 partita_id: m.id_partita,
                 minuto: m.minuto,
                 tipo_gol: m.tipo_gol,
-                // Restituiamo il giocatore risolto (o fallback sui dati originali)
                 giocatore: giocatoreRisolto || (marcatoreObj ? { ...marcatoreObj, squadra: { nome: 'N.D.' } } : null),
                 assistman: assistmanRisolto || (assistmanObj ? { ...assistmanObj } : null)
             };
         });
-
+        // 7. Ricerca Notizie
+        const {data : notizie} = await supabase 
+            .from('notizie')
+            .select(`
+                id,
+                titolo,
+                contenuto,
+                img_url,
+                data_pubblicazione,
+                id_competizione
+            `)
+            .eq('id_competizione', idCompetizione)
         res.json({
             competizione,
             partite: partite || [],
             marcatori: marcatoriRisolti,
-            notizie: [] // Aggiungi qui la query notizie se serve
+            notizie: notizie // Aggiungi qui la query notizie se serve
         });
 
     } catch (err) {
