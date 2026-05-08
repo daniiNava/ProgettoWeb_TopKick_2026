@@ -476,7 +476,13 @@ onMounted(() => fetchDettagli())
               <h5 class="border-bottom pb-2 text-secondary">{{ pluraleRuolo[ruolo] || ruolo }}</h5>
               <ul class="list-group list-group-flush">
                 <li v-for="g in lista" :key="g.id" class="list-group-item px-0 fw-semibold">
-                  {{ g.nome_cognome }}
+                  <RouterLink
+                        :key="g.nome_cognome" 
+                        :to="`/giocatori/${g.nome_cognome}`" 
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-decoration-none"
+                    >
+                    {{ g.nome_cognome }}
+                  </RouterLink>
                 </li>
               </ul>
             </div>
