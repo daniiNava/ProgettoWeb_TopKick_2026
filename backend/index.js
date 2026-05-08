@@ -1206,6 +1206,140 @@ app.get('/api/squadre/:id/dettagli', async (req, res) => {
         res.status(500).json({ error: "Errore interno del server" });
     }
 });
+
+
+// Se usi il client supabase: const { createClient } = require('@supabase/supabase-js')
+// const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+
+app.get('/api/giocatori/dettaglio/:identifier', async (req, res) => {
+    const rawIdentifier = req.params.identifier;
+    
+    if (!rawIdentifier || rawIdentifier === 'undefined') {
+        console.log("❌ Bloccata richiesta con parametro undefined o vuoto");
+        return res.status(400).json({ message: "URL non valido (parametro mancante)" });
+    }
+
+    const identifier = decodeURIComponent(rawIdentifier).trim();
+    let nomeCercato = identifier;
+
+    console.log(`\n--- CERCO GIOCATORE: ${nomeCercato} ---`);
+
+    try {
+        if (!isNaN(identifier) && identifier !== '') {
+            const { data: p, error: errId } = await supabase
+                .from('giocatori')
+                .select('nome_cognome')
+                .eq('id', identifier)
+                .single();
+            
+            if (errId) console.error("Errore ricerca ID:", errId);
+            
+            if (p) {
+                nomeCercato = p.nome_cognome.trim();
+                console.log("ID riconosciuto. Nome reale dal DB:", nomeCercato);
+            } else {
+                return res.status(404).json({ message: "ID giocatore non trovato" });
+            }
+        }
+
+        const { data: records, error: pError } = await supabase
+            .from('giocatori')
+            .select(`
+                *,
+                squadre (id, nome, logo_url, id_competizione)
+            `)
+            .ilike('nome_cognome', `%${nomeCercato}%`) 
+            .order('annata', { ascending: false });
+
+        if (pError) {
+            console.error("⚠️ ERRORE DATABASE (Tabella giocatori):", pError);
+            return res.status(500).json({ message: "Errore query database", errore: pError });
+        }
+
+        if (!records || records.length === 0) {
+            console.log(`❌ Nessun giocatore trovato con il nome simile a: %${nomeCercato}%`);
+            return res.status(404).json({ message: "Giocatore non trovato" });
+        }
+
+        console.log(`✅ Giocatore trovato! Trovati ${records.length} record in carriera.`);
+
+        const infoAttuali = records[0];
+        const tuttiIdGiocatori = records.map(r => r.id);
+
+        const { data: marcatori } = await supabase
+            .from('marcatori')
+            .select('id_giocatore, id_assistman, gol')
+            .or(`id_giocatore.in.(${tuttiIdGiocatori.join(',')}),id_assistman.in.(${tuttiIdGiocatori.join(',')})`);
+
+        let totaleGol = 0;
+        let totaleAssist = 0;
+
+        const carrieraConStatistiche = records.map(record => {
+            const eventiGol = marcatori ? marcatori.filter(m => m.id_giocatore === record.id) : [];
+            const eventiAssist = marcatori ? marcatori.filter(m => m.id_assistman === record.id) : [];
+
+            const golStagione = eventiGol.reduce((acc, curr) => acc + (curr.gol > 0 ? curr.gol : 1), 0);
+            const assistStagione = eventiAssist.length;
+
+            totaleGol += golStagione;
+            totaleAssist += assistStagione;
+
+            return { ...record, gol: golStagione, assist: assistStagione };
+        });
+
+        let ultimePartite = [];
+        const idSquadraCorrente = infoAttuali.id_squadra;
+
+        if (idSquadraCorrente) {
+            // 🔥 ECCO LA MODIFICA: ho alzato il limite a 50 partite invece di 5
+            const { data: partite, error: errPartite } = await supabase
+                .from('partite')
+                .select(`
+                    id, data_ora, gol_casa, gol_trasferta, stato,
+                    squadra_casa:squadre!partite_id_squadra_casa_fkey (id, nome, logo_url),
+                    squadra_trasferta:squadre!partite_id_squadra_trasferta_fkey (id, nome, logo_url)
+                `)
+                .eq('stato', 'finita')
+                .or(`id_squadra_casa.eq.${idSquadraCorrente},id_squadra_trasferta.eq.${idSquadraCorrente}`)
+                .order('data_ora', { ascending: false })
+                .limit(50); // <--- Modificato qui!
+
+            if (errPartite) console.error("⚠️ ERRORE DATABASE (Tabella partite):", errPartite);
+
+            if (partite && partite.length > 0) {
+                const idsPartite = partite.map(p => p.id);
+                
+                const { data: marcatoriUltimePartite } = await supabase
+                    .from('marcatori')
+                    .select('id_partita, id_giocatore, id_assistman, gol')
+                    .in('id_partita', idsPartite)
+                    .or(`id_giocatore.eq.${infoAttuali.id},id_assistman.eq.${infoAttuali.id}`);
+
+                ultimePartite = partite.map(partita => {
+                    const eventiGolMatch = marcatoriUltimePartite ? marcatoriUltimePartite.filter(m => m.id_partita === partita.id && m.id_giocatore === infoAttuali.id) : [];
+                    const eventiAssistMatch = marcatoriUltimePartite ? marcatoriUltimePartite.filter(m => m.id_partita === partita.id && m.id_assistman === infoAttuali.id) : [];
+                    
+                    return {
+                        ...partita,
+                        gol_giocatore: eventiGolMatch.reduce((acc, curr) => acc + (curr.gol > 0 ? curr.gol : 1), 0),
+                        assist_giocatore: eventiAssistMatch.length
+                    };
+                });
+            }
+        }
+
+        res.json({
+            info: infoAttuali,
+            carriera: carrieraConStatistiche,
+            statistiche: { gol: totaleGol, assist: totaleAssist },
+            ultime_partite: ultimePartite
+        });
+
+    } catch (error) {
+        console.error("🔥 ERRORE FATALE API GIOCATORE:", error);
+        res.status(500).json({ error: "Errore interno del server" });
+    }
+});
 // --- AVVIO DEL SERVER ---
 app.listen(PORT, () => {
     console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
