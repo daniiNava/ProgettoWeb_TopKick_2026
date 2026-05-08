@@ -35,7 +35,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
         <!--pulsante per tornare indietro-->
         <button @click="router.back()" class="btn btn-outline-secondary mb-4">
             &larr; Torna alle notizie

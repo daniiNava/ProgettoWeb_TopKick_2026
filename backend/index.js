@@ -90,8 +90,8 @@ app.get('/api/partite', async (req, res) => {
             .select(`
                 id, data_ora, gol_casa, gol_trasferta, stato,
                 competizioni ( nome ),
-                squadra_casa:squadre!id_squadra_casa ( nome, logo_url ), 
-                squadra_trasferta:squadre!id_squadra_trasferta ( nome, logo_url )
+                squadra_casa:squadre!id_squadra_casa ( id, nome, logo_url ), 
+                squadra_trasferta:squadre!id_squadra_trasferta ( id, nome, logo_url )
             `)
             .gte('data_ora', `${dataRichiesta}T00:00:00`)
             .lte('data_ora', `${dataRichiesta}T23:59:59`)
@@ -932,32 +932,267 @@ app.get('/api/ricerca', async (req, res) => {
         }
 })
 
+async function getAllData(queryBuilder) {
+    let allData = [];
+    let from = 0;
+    let to = 999;
+    let finished = false;
 
-// ==========================================
-// API COMPETIZIONI 
-// ==========================================
+    while (!finished) {
+        const { data, error } = await queryBuilder.range(from, to);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            allData = [...allData, ...data];
+            from += 1000;
+            to += 1000;
+        } else {
+            finished = true;
+        }
+    }
+    return { data: allData };
+}
+// 1. GET TUTTE LE COMPETIZIONI (Con filtro annata)
 app.get('/api/competizioni', async (req, res) => {
+    const annataRichiesta = req.query.annata || '25/26';
+
     try {
-        const {data, error} = await supabase 
+        // 1. Prendiamo tutte le competizioni
+        const { data: competizioni } = await supabase
             .from('competizioni')
+            .select('*')
+            .order('nome', { ascending: true });
+
+        // 2. Prendiamo TUTTE le partite finite di quell'annata per calcolare le classifiche
+        const { data: partite } = await getAllData(supabase
+            .from('partite')
             .select(`
-                id,
-                nome,
-                nazione,
-                logo_url,
-                squadre(id, nome, logo_url)
+                id_competizione, gol_casa, gol_trasferta,
+                squadra_casa:squadre!id_squadra_casa(id, nome, logo_url),
+                squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
             `)
-            .order('nome', {ascending: true});
-        if(error) throw error;
-        res.json(data);
+            .eq('stato', 'finita')
+            .eq('annata', annataRichiesta));
+            
+
+        // 3. Troviamo tutte le annate disponibili (per il menu a tendina)
+        const { data: annateData } = await supabase
+            .from('partite')
+            .select('annata');
+            
+        
+        let annateDisponibili = [];
+        if (annateData) {
+            annateDisponibili = [...new Set(annateData.map(p => p.annata))].sort().reverse();
+        }
+        if (annateDisponibili.length === 0) annateDisponibili = ['25/26'];
+        
+        res.json({ 
+            competizioni: competizioni || [], 
+            partite: partite || [],
+            annate_disponibili: annateDisponibili
+        });
     } catch (err) {
-        console.error("Errore nel recupero competizioni:", err);
-        res.status(500).json({error:"Errore interno del server"});
+        console.error("Errore competizioni:", err);
+        res.status(500).json({ error: "Errore nel recupero delle competizioni" });
     }
 });
 
 
+// 2. GET DETTAGLIO SINGOLA COMPETIZIONE
+app.get('/api/competizioni/:id/dettagli', async (req, res) => {
+    const idCompetizione = req.params.id;
+    const annataRichiesta = req.query.annata || '25/26';
+
+    try {
+        // 1. Dati base
+        const { data: competizione } = await supabase.from('competizioni').select('*').eq('id', idCompetizione).single();
+        
+        const { data: partite } = await supabase.from('partite').select(`
+            *, 
+            squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), 
+            squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+        `).eq('id_competizione', idCompetizione).eq('annata', annataRichiesta);
+
+        // 2. Recupero MARCATORI - Join implicito per ottenere id_squadra dai giocatori
+        const { data: marcatoriRaw } = await supabase
+            .from('marcatori')
+            .select(`
+                id,
+                id_partita,
+                minuto,
+                tipo_gol,
+                marcatore_originale:id_giocatore(id, nome_cognome, id_squadra), 
+                assistman_originale:id_assistman(id, nome_cognome, id_squadra),
+                partita:id_partita!inner(id_competizione, annata)
+            `)
+            .eq('partita.id_competizione', idCompetizione)
+            .eq('partita.annata', annataRichiesta);
+
+        // 3. Estrazione nomi unici (per il recupero dei record completi dell'annata)
+        const nomiGiocatori = [...new Set([
+            ...(marcatoriRaw?.map(m => m.marcatore_originale?.nome_cognome) || []),
+            ...(marcatoriRaw?.map(m => m.assistman_originale?.nome_cognome) || [])
+        ].filter(Boolean))];
+
+        // 4. Recupero record GIOCATORI dell'annata
+        const { data: giocatoriAnnata } = await supabase
+            .from('giocatori')
+            .select(`
+                id, 
+                nome_cognome, 
+                annata, 
+                id_squadra,
+                squadra:squadre!inner(id, nome, id_competizione)
+            `)
+            .in('nome_cognome', nomiGiocatori)
+            .eq('annata', annataRichiesta)
+            .eq('squadra.id_competizione', idCompetizione);
+
+        // 5. Creazione Mappa con chiave composta (Nome + Squadra)
+        const mappaGiocatori = {};
+        giocatoriAnnata?.forEach(g => {
+            const key = `${g.nome_cognome}|${g.id_squadra}`;
+            mappaGiocatori[key] = g;
+        });
+
+        // 6. Mappatura finale
+        const marcatoriRisolti = (marcatoriRaw || []).map(m => {
+            const marcatoreObj = m.marcatore_originale;
+            const assistmanObj = m.assistman_originale;
+
+            // Usiamo i dati ottenuti dal join per creare la chiave di ricerca
+            const chiaveM = marcatoreObj ? `${marcatoreObj.nome_cognome}|${marcatoreObj.id_squadra}` : null;
+            const chiaveA = assistmanObj ? `${assistmanObj.nome_cognome}|${assistmanObj.id_squadra}` : null;
+
+            const giocatoreRisolto = chiaveM ? mappaGiocatori[chiaveM] : null;
+            const assistmanRisolto = chiaveA ? mappaGiocatori[chiaveA] : null;
+
+            return {
+                id: m.id,
+                partita_id: m.id_partita,
+                minuto: m.minuto,
+                tipo_gol: m.tipo_gol,
+                // Restituiamo il giocatore risolto (o fallback sui dati originali)
+                giocatore: giocatoreRisolto || (marcatoreObj ? { ...marcatoreObj, squadra: { nome: 'N.D.' } } : null),
+                assistman: assistmanRisolto || (assistmanObj ? { ...assistmanObj } : null)
+            };
+        });
+
+        res.json({
+            competizione,
+            partite: partite || [],
+            marcatori: marcatoriRisolti,
+            notizie: [] // Aggiungi qui la query notizie se serve
+        });
+
+    } catch (err) {
+        console.error("Errore dettagli competizione:", err);
+        res.status(500).json({ error: "Errore interno" });
+    }
+});
+
+// ==========================================
+// API PUBBLICHE: DETTAGLIO SQUADRA (AGGIORNATO CON MARCATORI)
+// ==========================================
+
+app.get('/api/squadre/:id/dettagli', async (req, res) => {
+    const idSquadra = req.params.id;
+    const annataRichiesta = req.query.annata || '25/26'; 
+    console.log("CHIAMATA API DETTAGLI - ID SQUADRA RICEVUTO:", idSquadra);
+    
+    try {
+        // 1. Dati della Squadra
+        const { data: squadra, error: sqError } = await supabase
+            .from('squadre')
+            .select(`id, nome, logo_url, id_competizione, competizioni ( id, nome )`)
+            .eq('id', idSquadra)
+            .single();
+
+        if (sqError || !squadra) return res.status(404).json({ error: "Squadra non trovata" });
+
+        // 2. La Rosa (Giocatori filtrati per annata)
+        const { data: giocatori } = await supabase
+            .from('giocatori')
+            .select('*')
+            .eq('id_squadra', idSquadra)
+            .eq('annata', annataRichiesta)
+            .order('ruolo', { ascending: true });
+
+        // 3. Le Partite della squadra
+        const { data: partite } = await supabase
+            .from('partite')
+            .select(`
+                *,
+                squadra_casa:squadre!id_squadra_casa(id, nome, logo_url),
+                squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+            `)
+            .or(`id_squadra_casa.eq.${idSquadra},id_squadra_trasferta.eq.${idSquadra}`)
+            .eq('annata', annataRichiesta)
+            .order('data_ora', { ascending: false });
+
+        // 4. I Marcatori di queste partite (Serve per la tendina a comparsa)
+        let marcatori = [];
+        if (partite && partite.length > 0) {
+            const idPartite = partite.map(p => p.id);
+            const { data: marcatoriData } = await supabase
+                .from('marcatori')
+                .select(`
+                    *,
+                    giocatore:giocatori!id_giocatore(id, nome_cognome, id_squadra)
+                `)
+                .in('id_partita', idPartite);
+            marcatori = marcatoriData || [];
+        }
+
+        // 5. TUTTE le partite finite della competizione (Per la Classifica)
+        const { data: partiteCompetizione } = await supabase
+            .from('partite')
+            .select(`
+                id_squadra_casa, id_squadra_trasferta, gol_casa, gol_trasferta,
+                squadra_casa:squadre!id_squadra_casa(id, nome, logo_url),
+                squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+            `)
+            .eq('id_competizione', squadra.id_competizione)
+            .eq('stato', 'finita')
+            .eq('annata', annataRichiesta);
+
+        // 6. Le News
+        const { data: notizie } = await supabase
+            .from('notizie')
+            .select('*')
+            .eq('id_competizione', squadra.id_competizione)
+            .order('data_pubblicazione', { ascending: false })
+            .limit(5);
+
+        // 7. Annate disponibili
+        const { data: annateData } = await supabase
+            .from('partite')
+            .select('annata')
+            .eq('id_competizione', squadra.id_competizione);
+        
+        let annateDisponibili = [];
+        if (annateData) {
+            annateDisponibili = [...new Set(annateData.map(p => p.annata))].sort().reverse();
+        }
+        if (annateDisponibili.length === 0) annateDisponibili = ['25/26'];
+
+        res.json({
+            squadra: squadra,
+            giocatori: giocatori || [],
+            partite: partite || [],
+            marcatori: marcatori, // <-- Aggiunto!
+            partite_competizione: partiteCompetizione || [],
+            notizie: notizie || [],
+            annate_disponibili: annateDisponibili
+        });
+
+    } catch (err) {
+        console.error("Errore dettaglio squadra:", err);
+        res.status(500).json({ error: "Errore interno del server" });
+    }
+});
 // --- AVVIO DEL SERVER ---
 app.listen(PORT, () => {
     console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
 });
+

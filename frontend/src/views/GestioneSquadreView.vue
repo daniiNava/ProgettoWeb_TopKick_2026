@@ -114,7 +114,7 @@ onMounted(() => {
 
 
 <template>
-    <div class="container my-5">
+    <div class="container py-5">
 
         <div v-if="caricamento" class="text-center mt-5">
             <div class="spinner-border text-primary" role="status"></div>
