@@ -354,7 +354,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                             <label class="form-label fw-semibold">Email</label>
                             <input type="email" class="form-control" v-model="loginEmail" required> 
                         </div>
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Password</label>
                             <input type="password" class="form-control" v-model="loginPassword" required>
                         </div>
@@ -366,11 +366,11 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                             <label class="form-label fw-semibold">Username</label>
                             <input type="text" class="form-control" v-model="regUsername" required>
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Email</label>
                             <input type="email" class="form-control" v-model="regEmail" required>
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Password (min. 8 caratteri)</label>
                             <input type="password" class="form-control" v-model="regPassword" minlength="8" required>
                         </div>
