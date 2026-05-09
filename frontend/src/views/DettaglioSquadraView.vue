@@ -231,15 +231,14 @@ onMounted(() => fetchDettagli())
 
     <div v-else-if="squadra">
       
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
-        <div class="d-flex align-items-center">
-          <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-4 rounded" style="width: 100px; height: 100px; object-fit: contain;">
-          <div>
-            <h1 class="fw-bold mb-1 d-flex align-items-center">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
+        <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid rounded" style="width: 100px; height: 100px; object-fit: contain;">
+        <div class="w-100 text-center text-md-start my-3">
+            <h1 class="fw-bold mb-1 d-md-flex align-items-center text-center">
               {{ squadra.nome }}
               
               <button 
-                class="btn btn-link fs-4 p-0 ms-3 text-decoration-none transition-all" 
+                class="btn btn-link fs-4 p-0 ms-md-3 text-decoration-none transition-all" 
                 :class="isPreferita ? 'text-warning' : 'text-success'"
                 @click="togglePreferito" 
                 :title="isPreferita ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
@@ -257,10 +256,8 @@ onMounted(() => fetchDettagli())
               <strong v-else>N.D.</strong>
             </p>
           </div>
-        </div>
-        
         <div>
-          <label class="form-label text-muted small fw-bold mb-1 d-block text-end">Stagione</label>
+          <label class="form-label text-muted small fw-bold mb-1 d-block">Stagione</label>
           <select class="form-select border-success fw-bold w-auto" v-model="annataSelezionata">
             <option v-for="annata in annateDisponibili" :key="annata" :value="annata">
               {{ annata }}

@@ -212,7 +212,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2"> 
         <div class="container-fluid px-4 d-flex align-items-center">
             
-            <RouterLink class="navbar-brand d-flex align-items-center" to="/">
+            <RouterLink class="navbar-brand d-flex align-items-center w-0 w-lg-100 mx-auto" to="/">
                 <img 
                     src="/logo.png" 
                     alt="Logo TopKick" 
@@ -220,113 +220,168 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                     style="height: 70px; width: auto; object-fit: contain; mix-blend-mode: screen;"
                 >
             </RouterLink>
+            <form class="d-flex align-items-center position-relative d-lg-none w-auto" role="search" @submit.prevent="eseguiRicerca"> 
+                <select class="form-select me-2 bg-dark text-white border-secondary" style="width: 40% !important;" v-model="tipoRicerca" @change="cercaLive"> 
+                    <option value="tutto">Tutto</option>
+                    <option value="squadre">Squadre</option>
+                    <option value="giocatori">Giocatori </option>
+                    <option value="competizioni">Competizioni</option>
+                    <option value="notizie">Notizie</option>
+                </select>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span> 
+                <div class="position-relative flex-grow-1">
+                    <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                        <li v-if="suggerimenti.squadre.length>0">
+                            <h6 class="dropdown-header text-success">Squadre</h6>
+                        </li>
+                        <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
+                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
+                        </li>
+
+                        <li v-if="suggerimenti.giocatori.length>0">
+                            <h6 class="dropdown-header text-primary">Giocatori</h6>
+                        </li>
+                        <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
+                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
+                        </li>
+
+                        <li v-if="suggerimenti.competizioni.length>0">
+                            <h6 class="dropdown-header text-primary">Competizioni</h6>
+                        </li>
+                        <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
+                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
+                        </li>
+
+                        <li v-if="suggerimenti.notizie.length>0">
+                            <h6 class="dropdown-header text-primary">Notizie</h6>
+                        </li>
+                        <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
+                            <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <button class="btn btn-outline-success ms-2" type="submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                    </svg>
+                </button>
+                <button class="navbar-toggler border-0 ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+                <span class="navbar-toggler-icon"></span>
             </button>
+            </form>
+            <div class="offcanvas offcanvas-end bg-dark" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+                <div class="offcanvas-header">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row align-items-lg-center">
+                        <li class="nav-item order-1 order-lg-4 mb-3 mb-lg-0">
+                            <div class="d-flex align-items-center">
+                                <div class="nav-item dropdown">
+                                    <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center" type="button" @click="toggleDropdown"> 
+                                        <span v-if="utenteLoggato">                                         
+                                            👤 Ciao, {{ utenteLoggato.username }}
+                                            <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span>  
+                                        </span>
+                                        <span v-else>👤 Profilo</span>                                      
+                                    </button>
 
-            <div class="collapse navbar-collapse align-items-center" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-4 align-items-lg-center"> 
-                    <li class="nav-item">
-                        <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
-                    </li>
-                    <li class="nav-item">
-                        <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
-                    </li>
-                </ul>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;" data-bs-dismiss="offcanvas"> 
+                                        <template v-if="!utenteLoggato">            
+                                            <li>
+                                                <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
+                                                    <i class="bi bi-box-arrow-in-right me-2"></i>Accedi / Registrati                 
+                                                </a>
+                                            </li>
+                                        </template>
 
-                <form class="d-flex align-items-center me-3 position-relative" role="search" @submit.prevent="eseguiRicerca"> 
-                    <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
-                        <option value="tutto">Tutto</option>
-                        <option value="squadre">Squadre</option>
-                        <option value="giocatori">Giocatori </option>
-                        <option value="competizioni">Competizioni</option>
-                        <option value="notizie">Notizie</option>
-                    </select>
+                                        <template v-else>
+                                            <li>
+                                                <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
+                                                    <i class="bi bi-person me-2"></i>Il mio Profilo
+                                                </RouterLink>
+                                            </li>
+                                            <li v-if="utenteLoggato.ruolo === 'premium'">
+                                                <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
+                                                    <i class="bi bi-trophy me-2"></i>Le mie Competizioni
+                                                </RouterLink>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
+                                                    <i class="bi bi-box-arrow-left me-2"></i>Esci
+                                                </a>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="nav-item order-2 order-lg-2" data-bs-dismiss="offcanvas">
+                            <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
+                        </li>
+                        <li class="nav-item order-3 order-lg-1 me-lg-3" data-bs-dismiss="offcanvas">
+                            <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
+                        </li>
+                        <li class="nav-item order-4 order-lg-3 d-none d-lg-block mx-lg-2 ms-lg-auto">
+                            <form class="d-flex align-items-center me-3 position-relative w-auto" role="search" @submit.prevent="eseguiRicerca"> 
+                                <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
+                                    <option value="tutto">Tutto</option>
+                                    <option value="squadre">Squadre</option>
+                                    <option value="giocatori">Giocatori </option>
+                                    <option value="competizioni">Competizioni</option>
+                                    <option value="notizie">Notizie</option>
+                                </select>
 
-                    <div class="position-relative w-100">
-                        <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
-                        <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
-                            <li v-if="suggerimenti.squadre.length>0">
-                                <h6 class="dropdown-header text-success">Squadre</h6>
-                            </li>
-                            <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
-                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
-                            </li>
+                                <div class="position-relative w-100">
+                                    <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                                        <li v-if="suggerimenti.squadre.length>0">
+                                            <h6 class="dropdown-header text-success">Squadre</h6>
+                                        </li>
+                                        <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
+                                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
+                                        </li>
 
-                            <li v-if="suggerimenti.giocatori.length>0">
-                                <h6 class="dropdown-header text-primary">Giocatori</h6>
-                            </li>
-                            <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
-                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
-                            </li>
+                                        <li v-if="suggerimenti.giocatori.length>0">
+                                            <h6 class="dropdown-header text-primary">Giocatori</h6>
+                                        </li>
+                                        <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
+                                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
+                                        </li>
 
-                            <li v-if="suggerimenti.competizioni.length>0">
-                                <h6 class="dropdown-header text-primary">Competizioni</h6>
-                            </li>
-                            <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
-                                <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
-                            </li>
+                                        <li v-if="suggerimenti.competizioni.length>0">
+                                            <h6 class="dropdown-header text-primary">Competizioni</h6>
+                                        </li>
+                                        <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
+                                            <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
+                                        </li>
 
-                            <li v-if="suggerimenti.notizie.length>0">
-                                <h6 class="dropdown-header text-primary">Notizie</h6>
-                            </li>
-                            <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
-                                <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
-                            </li>
+                                        <li v-if="suggerimenti.notizie.length>0">
+                                            <h6 class="dropdown-header text-primary">Notizie</h6>
+                                        </li>
+                                        <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
+                                            <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
+                                        </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
-                </form>
-
-                <div class="d-flex align-items-center">
-                    
-
-                    <div class="nav-item dropdown">
-                        <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center" type="button" @click="toggleDropdown"> 
-                            <span v-if="utenteLoggato">                                         
-                                👤 Ciao, {{ utenteLoggato.username }}
-                                <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span>  
-                            </span>
-                            <span v-else>👤 Profilo</span>                                      
-                        </button>
-
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;"> 
-                            <template v-if="!utenteLoggato">            
-                                <li>
-                                    <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
-                                        <i class="bi bi-box-arrow-in-right me-2"></i>Accedi / Registrati                 
-                                    </a>
-                                </li>
-                            </template>
-
-                            <template v-else>
-                                <li>
-                                    <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
-                                        <i class="bi bi-person me-2"></i>Il mio Profilo
-                                    </RouterLink>
-                                </li>
-                                <li v-if="utenteLoggato.ruolo === 'premium'">
-                                    <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
-                                        <i class="bi bi-trophy me-2"></i>Le mie Competizioni
-                                    </RouterLink>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
-                                        <i class="bi bi-box-arrow-left me-2"></i>Esci
-                                    </a>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
-                 </div>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>

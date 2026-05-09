@@ -144,9 +144,6 @@ onMounted(() => fetchDati())
                 <small class="text-muted">Stagione {{ annataSelezionata }}</small>
               </div>
             </div>
-            <RouterLink :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">
-              Classifica Completa ➔
-            </RouterLink>
           </div>
 
           <!-- Body Card (Mini Classifica) -->
@@ -180,8 +177,10 @@ onMounted(() => fetchDati())
                 </tr>
               </tbody>
             </table>
+            <RouterLink :to="{ path: `/competizioni/${comp.id}`, query: { annata: annataSelezionata } }" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm w-100">
+              Classifica Completa ➔
+            </RouterLink>
           </div>
-
         </div>
       </div>
     </div>

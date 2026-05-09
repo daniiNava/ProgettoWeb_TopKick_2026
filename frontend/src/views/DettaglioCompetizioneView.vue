@@ -249,14 +249,14 @@ onMounted(() => fetchDettagli())
 
     <div v-else-if="competizione">
       
-      <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
-        <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-4" style="width: auto; height: 100px;">
-        <div class="col">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
+        <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid" style="max-height: 100px; width: auto; object-fit: contain;">
+        <div class="w-100 text-center text-md-start my-3">
           <h1 class="fw-bold mb-1">{{ competizione.nome }}</h1>
           <p class="text-muted mb-0 fs-5">{{ competizione.nazione || 'Internazionale' }}</p>
         </div>
         <div>
-          <label class="form-label text-muted small fw-bold mb-1 d-block text-end">Stagione</label>
+          <label class="form-label text-muted small fw-bold mb-1 d-block">Stagione</label>
           <select class="form-select border-success fw-bold w-auto" v-model="annataSelezionata" @change="fetchDettagli">
             <option v-for="annata in annateDisponibili" :key="annata" :value="annata">
               {{ annata }}
