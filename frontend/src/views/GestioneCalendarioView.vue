@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
+import { showToast } from '@/utils/toastStore';     // Gestione errori (senza l'uso dell'alert)
 
 const route = useRoute()
 const router = useRouter()
@@ -23,10 +24,11 @@ const fetchDati = async () => {
         const response = await fetch(`/api/mie-competizioni/${idCompetizione}/calendario`)
 
         if (response.status === 401 || response.status === 403) {
-            alert("Accesso negato.")
-            router.push('/')
-            return
+            showToast("Accesso negato. Reindirizzamento...", 'danger');
+            router.push('/');
+            return;
         }
+
         if (response.ok) {
             const data = await response.json()
             console.log(data)
@@ -64,12 +66,11 @@ const aggiungiPartita = async () => {
 
     // Controllo anche frontend del far scegliere delle squadre diversi che si scontrano
     if (nuovaSquadraCasa.value === nuovaSquadraTrasferta.value){
-        errorMessage.value = "Una squadra non può giocare contro se stessa!"
-        return
+        showToast("Una squadra non può giocare contro se stessa!", 'warning');
+        return;
     }
     
     try {
-        
         const response = await fetch(`/api/mie-competizioni/${idCompetizione}/partite`, {
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
@@ -93,9 +94,11 @@ const aggiungiPartita = async () => {
             nuovaDataOra.value = ''
             
             errorMessage.value = ''
+
+            showToast("Partita programmata con successo!", 'success');
             
         } else {
-            errorMessage.value = data.error
+            showToast(data.error || "Errore durante il salvataggio", 'danger');
         }
 
     } catch (error){
@@ -113,8 +116,9 @@ const eliminaPartita = async (id) => {
         if(response.ok){
             // Rimozione dell'elemento dall'array reattivo
             partite.value = partite.value.filter(p => p.id !== id)
+            showToast("Impossibile eliminare la partita.", 'danger');
         } else {
-            alert("Errore durante l'eliminazione")
+            showToast("Errore di rete durante l'eliminazione", 'danger')
         }
     } catch (error){
         console.error("Errore: ", error)
@@ -168,7 +172,7 @@ const aggiungiMarcatoreTemp = (partita) => {
 
     // Marcatore e assistman devono essere diversi
     if(idAssistman && idGiocatore === idAssistman){
-        alert("Errore logico: Il marcatore e l'autore dell'assist non posso coincidere.");
+        showTest("Errore logico: Il marcatore e l'autore dell'assist non posso coincidere.", 'warning');
         return;
     }
 
@@ -189,7 +193,7 @@ const aggiungiMarcatoreTemp = (partita) => {
     
     //      Valutamento del superamento del limite
     if (golGiaInseriti >= maxGolConsentiti){
-        alert(`Errore di cardinalità: Impossibile inserire ulteriori marcatori. Il risultato indicato prevede un massimo di ${maxGolConsentiti} reti per quest squadra.`);
+        showToast(`Errore di cardinalità: Impossibile inserire ulteriori marcatori. Il risultato indicato prevede un massimo di ${maxGolConsentiti} reti per quest squadra.`);
         return;
     }
 
@@ -216,9 +220,9 @@ const aggiungiMarcatoreTemp = (partita) => {
 
     // Resent campi del form
     partita.marcatoreSelezionato = '';
-    partita.golSelezionati = '';
+    partita.minutoSelezionato = '';
     partita.tipoGolSelezionato = '';
-    partita.assistmanSelezionato = '';
+    partita.assistmanSelezionato = ''; 
 }
 
 // 3. Rimozione di un marcatore dall'array temporaneo

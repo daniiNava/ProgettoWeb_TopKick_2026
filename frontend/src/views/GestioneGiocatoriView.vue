@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
+import { showToast } from '@/utils/toastStore';
 
 const route = useRoute()
 const router = useRouter()
@@ -30,9 +31,9 @@ const fetchDati = async () => {
         const response = await fetch(`/api/squadre/${idSquadra}/giocatori`)
 
         if (response.status === 401 || response.status === 403) {
-            alert("Accesso negato. Devi essere un utente Premium.")
-            router.push('/')
-            return
+            showToast("Accesso negato. Devi essere un utente Premium.", 'danger');
+            router.push('/');
+            return;
         }
         if (response.ok) {
             const data = await response.json()
@@ -112,8 +113,9 @@ const eliminaGiocatore = async (id) => {
         if(response.ok){
             // Rimozione dell'elemento dall'array reattivo
             giocatori.value = giocatori.value.filter(g => g.id !== id)
+            showToast("Eliminazione del giocatore con successo!", 'success');
         } else {
-            alert("Errore durante l'eliminazione")
+            showToast("Errore durante l'eliminazione", 'danger');
         }
     } catch (error){
         console.error("Errore: ", error)

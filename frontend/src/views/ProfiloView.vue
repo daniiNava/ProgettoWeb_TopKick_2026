@@ -1,4 +1,5 @@
 <script setup>
+import { showToast } from '@/utils/toastStore';
 import {ref, onMounted} from 'vue' //importiamo le Composition API fondamentali di Vue, ref serve per creare variabile reattive (ovvero che se vengono modificate viene modificata l'interfaccia) e onMounted è l hook del ciclo di vito
 import { useRouter } from 'vue-router'; // Per reinderizzare l'utente
 
@@ -14,7 +15,7 @@ const fetchProfilo = async () => {
             utente.value = await response.json()
         } else {
             // Se NON LOGGATO: Errore 401, reindirizzamento alla Homepage
-            alert("Devi effettuare l'accesso per vedere questa pagina.")
+            showToast("Devi effettuare l'accesso per vedere questa pagina.", 'danger')
             router.push('/')
         }
     } catch(error) {

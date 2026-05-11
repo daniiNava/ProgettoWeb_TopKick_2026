@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'   // Importa Modal da bootstrap per chiuderlo via JS
 import {useRouter} from 'vue-router'
+import { showToast } from '@/utils/toastStore'
 // Variabile per la gestione degli errori
 const errorMessage = ref('')
 
@@ -105,6 +106,9 @@ const handleLogin = async () => {
             loginPassword.value = ''
             // Azzeramento eventuali errori precedenti
             errorMessage.value = ''
+
+            // TOAST DI SUCCESSO
+            showToast(`Benvenuto ${utenteLoggato.value.username}!`, 'success')
         } else{
             errorMessage.value = data.error
         }
@@ -147,6 +151,9 @@ const handleLogout = async () => {
         await fetch('/api/logout', { method: 'POST' })
         utenteLoggato.value = null      // Aggiornamento in modo istantaneo della Navbar
         isDropdownOpen.value = false    // Forza la chiusura del menu a tendina in caso di logout
+
+        // Nuovo TOAST INFORMATIVO
+        showToast("Logout effettuato con successo.", 'info')
     } catch(error){
         console.error("Errore logout:", error)
     }

@@ -1,4 +1,5 @@
 <script setup>
+import { showToast } from '@/utils/toastStore'
 import {ref, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
 
@@ -25,7 +26,7 @@ const fetchMieCompetizioni = async () => {
     try {
         const response = await fetch('/api/mie-competizioni')
         if(response.status === 401 || response.status === 403) {
-            alert("Accesso negato. Devi essere un utente Premium.")
+            showToast("Accesso negato. Devi essere un utente Premium.", 'danger');
             router.push('/')
             return
         }
@@ -94,7 +95,7 @@ const eliminaCompetizione = async (id) => {
             // Rimozione dell'elemento dall'array reattivo
             competizioni.value = competizioni.value.filter(c => c.id !== id)
         } else {
-            alert("Errore durante l'eliminazione")
+            showToast("Errore durante l'eliminazione", 'danger')
         }
     } catch (error){
         console.error("Errore: ", error)

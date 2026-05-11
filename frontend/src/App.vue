@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
+import ToastNotification from './components/ToastNotification.vue'; // Gestione degli errori (senza l'uso degli alert)
 
 </script>
 
@@ -14,6 +15,8 @@ import Footer from './components/Footer.vue'
     </main>
 
     <Footer />
+
+    <ToastNotification />
   </div>
 </template>
 
