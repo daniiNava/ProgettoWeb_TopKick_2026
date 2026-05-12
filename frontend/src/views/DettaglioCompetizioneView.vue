@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, registerRuntimeCompiler } from 'vue'
 import { useRoute } from 'vue-router'
+import { showToast } from '@/utils/toastStore'
 
 const route = useRoute()
 const idCompetizione = parseInt(route.params.id)
@@ -12,6 +13,10 @@ const notizie = ref([])
 const marcatoriRisolti = ref([])
 const caricamento = ref(true)
 const activeTab = ref('classifica')
+
+// Variabili preferiti e sessione 
+const utenteLoggato = ref(null)
+const isPreferito = ref(false)
 
 // Variabili per l'Annata
 const annataSelezionata = ref(route.query.annata || '25/26');
@@ -39,6 +44,64 @@ const fetchDettagli = async () => {
     caricamento.value = false;
   }
 };
+
+// --- LOGICA PREFERITI ---
+const checkSession = async () => {
+  try {
+    const response = await fetch('/api/me')
+    if (response.ok) {
+      utenteLoggato.value = await response.json()
+      await checkSePreferito()  // Se è loggato, controlla se è nei preferiti
+    }
+  } catch (error) {
+    console.error("Errore sessione: ", error)
+  }
+}
+
+const checkSePreferito = async () => {
+  try {
+    const response = await fetch('/api/preferiti')
+    if (response.ok) {
+      const data = await response.json()
+
+      // Controllo se l'ID di questa competizione è nell'array dei preferiti
+      isPreferito.value = data.competizioni.some(c => c.id === idCompetizione)
+    }
+  } catch (error) {
+    console.error("Errore controllo preferiti: ", error)
+  }
+}
+
+const togglePreferito = async () => {
+  if(!utenteLoggato.value) {
+    showToast("Devi accede per aggiungere i preferiti.", "warning")
+    return
+  }
+  try {
+    if (isPreferito.value){   // Se la stellina è piena, significa che se viene premuta è per levare tra i preferiti la competizione
+      // Rimuovi dai preferiti
+      const response = await fetch(`/api/preferiti/competizioni/${idCompetizione}`, { method: 'DELETE' })
+      if(response.ok){
+        isPreferito.value = false
+        showToast("Competizione rimossa dai preferiti", "info")
+      }
+    } else {
+      // Aggiunta ai preferiti
+      const response = await fetch(`/api/preferiti/competizioni`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_competizione: idCompetizione })
+      })
+      if (response.ok) {
+        isPreferito.value = true
+        showToast("Competizione aggiunta ai preferiti!", "success")
+      }
+    }
+
+  } catch (error) {
+    console.error("Errore di connessione: ", error)
+  }
+}
 
 // --- COMPUTED PROPERTIES: PARTITE ---
 const partiteGiocate = computed(() => partite.value.filter(p => p.stato === 'finita').reverse())
@@ -237,7 +300,10 @@ const formattaData = (dataStringa) => {
   return new Date(dataStringa).toLocaleDateString('it-IT', opzioni)
 }
 
-onMounted(() => fetchDettagli())
+onMounted(() => {
+  fetchDettagli()
+  checkSession()
+})
 
 </script>
 
@@ -252,7 +318,19 @@ onMounted(() => fetchDettagli())
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
         <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid" style="max-height: 100px; width: auto; object-fit: contain;">
         <div class="w-100 text-center text-md-start my-3">
-          <h1 class="fw-bold mb-1">{{ competizione.nome }}</h1>
+          <h1 class="fw-bold mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
+            <!-- Il testo viene spaziato con me-3 (margin-end) -->
+            <span class="me-3">{{ competizione.nome }}</span>
+            
+            <!-- L'icona diventa l'elemento cliccabile diretto -->
+            <i 
+              class="bi fs-3" 
+              :class="isPreferito ? 'bi-star-fill text-warning' : 'bi-star text-secondary'" 
+              style="cursor: pointer; transition: transform 0.2s;" 
+              @click="togglePreferito"
+              :title="isPreferito ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
+            ></i>
+          </h1>
           <p class="text-muted mb-0 fs-5">{{ competizione.nazione || 'Internazionale' }}</p>
         </div>
         <div>

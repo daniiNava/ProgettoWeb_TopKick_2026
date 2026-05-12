@@ -1340,6 +1340,110 @@ app.get('/api/giocatori/dettaglio/:identifier', async (req, res) => {
         res.status(500).json({ error: "Errore interno del server" });
     }
 });
+
+
+// ===================================================
+//  API: GESTIONE PREFERITI         (FASE 9)
+// ===================================================
+
+// Middleware per controllare che l'utente sia loggato (Base o Premium) 
+// (questo perchè vogliamo far visualizzare "I miei Preferiti" sono ai loggati)
+const checkAuth = (req, res, next) => {
+    if(!req.session.user) return res.status(401).json({ error:"Devi effettuare l'accesso." });
+    next();
+}
+
+// GET: Recupero tutti i preferiti dell'utente loggato
+app.get('/api/preferiti', checkAuth, async (req, res) => {
+    const idUtente = req.session.user.id;
+    
+    try {
+        // 1. Recupero Competizioni Preferite
+        const { data: compPreferite, error: errComp} = await supabase
+            .from('preferiti_competizioni')
+            .select('competizioni(id, nome, logo_url)')
+            .eq('id_utente', idUtente);
+        if(errComp) throw errComp;
+
+        // 1. Recupero SQUADRE Preferite
+        const { data: sqPreferite, error: errSq } = await supabase
+            .from('preferiti_squadre')
+            .select('squadre(id, nome, logo_url)')
+            .eq('id_utente', idUtente);
+        if(errSq) throw errSq;
+
+        // Formattazione dei dati per renderli più facili da leggere per Vue
+        const competizioni = compPreferite ? compPreferite.map(p => p.competizioni) : [];
+        const squadre = sqPreferite ? sqPreferite.map(p => p.squadre) : [];
+
+        res.json({ competizioni, squadre });
+
+    } catch (err) {
+        res.status(500).json({ error: "Errore nel recupero dei preferiti" });
+    }
+});
+// DELETE: Eliminazione di una competizione
+app.delete('/api/preferiti/competizioni/:id', checkAuth, async (req, res) => {
+    try{
+        const{ error } = await supabase.from('preferiti_competizioni')
+            .delete()
+            .eq('id_utente', req.session.user.id)
+            .eq('id_competizione', req.params.id);
+
+            if(error) throw error;            
+        
+            res.json({ message: "Competizione rimossa dai preferiti" });
+    } catch (err) {
+        res.status(500).json({ error: "Errore nell'eliminazione della competizione tra i preferiti" });
+    }
+});
+
+// DELETE: Eliminazione di una squadre
+app.delete('/api/preferiti/squadre/:id', checkAuth, async (req, res) => {
+    try{
+        const{ error } = await supabase.from('preferiti_squadre')
+            .delete()
+            .eq('id_utente', req.session.user.id)
+            .eq('id_squadra', req.params.id);
+
+            if(error) throw error;
+        
+            res.json({ message: "Squadra rimossa dai preferiti" });
+    } catch (err) {
+        res.status(500).json({ error: "Errore nell'eliminazione della squadra tra i preferiti" });
+    }
+});
+
+// POST: Aggiunta di una competizione tra i preferiti
+app.post('/api/preferiti/competizioni', checkAuth, async (req, res) => {
+    const { id_competizione } = req.body;
+    try{
+        const{ error } = await supabase
+            .from('preferiti_competizioni')
+            .insert([{ id_utente: req.session.user.id, id_competizione }]);
+
+            if(error) throw error;
+            res.status(201).json({ message: "Aggiunta ai preferiti" });
+    } catch (err) {
+        res.status(500).json({ error: "Errore nell'aggiunta ai preferiti" });
+    }
+});
+
+// POST: Aggiunta di una squadra tra i preferiti
+app.post('/api/preferiti/squadre', checkAuth, async (req, res) => {
+    const { id_squadra } = req.body;
+    try{
+        const{ error } = await supabase
+            .from('preferiti_squadre')
+            .insert([{ id_utente: req.session.user.id, id_squadra }]);
+
+            if(error) throw error;
+            res.status(201).json({ message: "Aggiunta ai preferiti" });
+    } catch (err) {
+        res.status(500).json({ error: "Errore nell'aggiunta ai preferiti" });
+    }
+});
+
 // --- AVVIO DEL SERVER ---
 app.listen(PORT, () => {
     console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);

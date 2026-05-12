@@ -4,8 +4,11 @@ import router from './router'
 
 // IMPORTAZIONE DI BOOSTRAP predentemente installato
 import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
+// IMPORTAZIONE foglio di stile bootstrap icons
+import 'bootstrap-icons/font/bootstrap-icons.css'
 const app = createApp(App)
 
 app.use(router)

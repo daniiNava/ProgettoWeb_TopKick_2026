@@ -13,6 +13,7 @@ import GestioneCalendarioView from '@/views/GestioneCalendarioView.vue'
 import DettaglioCompetizioneView from '../views/DettaglioCompetizioneView.vue'
 import DettaglioSquadraView from '../views/DettaglioSquadraView.vue'
 import DettaglioGiocatoriView from '../views/DettaglioGiocatoriView.vue'
+import PreferitiView from '@/views/PreferitiView.vue'
 //importiamo le componenti 'pagina' che fungono da contenitori principali per un'intera schermata, stiamo caricando nella memoria del file tutte le schermate che abbiamo costruito fisicamente nella cartella views
 
 const router=createRouter({ //creaimo l'oggetto che gestirà i cambi di pagina
@@ -30,7 +31,8 @@ const router=createRouter({ //creaimo l'oggetto che gestirà i cambi di pagina
         { path: '/mie-competizioni/:id/calendario', name: 'gestione-calendario', component: GestioneCalendarioView },
         { path: '/competizioni/:id', name: 'dettaglio-competizione', component: DettaglioCompetizioneView},
         { path: '/squadre/:id', name: 'DettaglioSquadra', component: DettaglioSquadraView },
-        { path: '/giocatori/:identifier', name: 'DettaglioGiocatore', component: DettaglioGiocatoriView}
+        { path: '/giocatori/:identifier', name: 'DettaglioGiocatore', component: DettaglioGiocatoriView},
+        { path: '/preferiti', name: 'preferiti', component: PreferitiView}
     ] // elenco delle regole, per ogni blocco stiamo indicando -> 1. path -> se l'utente digita eattamentoe quest'indirizzo nell'URL
         // 2 name->  targhetta interna, che facile la gestione dell'arrivo alle rotte 
         // 3 component-> cancella la pagina attuale e stampa a schermo questo specifico file vue

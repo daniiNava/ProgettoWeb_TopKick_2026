@@ -116,7 +116,7 @@ const eliminaPartita = async (id) => {
         if(response.ok){
             // Rimozione dell'elemento dall'array reattivo
             partite.value = partite.value.filter(p => p.id !== id)
-            showToast("Impossibile eliminare la partita.", 'danger');
+            showToast("Eliminazione corretta della partita.", 'info');
         } else {
             showToast("Errore di rete durante l'eliminazione", 'danger')
         }

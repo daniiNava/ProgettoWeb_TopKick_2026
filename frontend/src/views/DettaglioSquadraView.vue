@@ -1,10 +1,11 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { showToast } from '@/utils/toastStore'
 
 const route = useRoute()
 
-// TRUCCO VUE ROUTER: Rendiamo l'ID reattivo. Così se passiamo da una squadra all'altra, la pagina si aggiorna!
+// ID reattivo. Così se passiamo da una squadra all'altra, la pagina si aggiorna!
 const idSquadra = computed(() => parseInt(route.params.id))
 
 // --- VARIABILI DI STATO ---
@@ -18,6 +19,10 @@ const caricamento = ref(true)
 const errore = ref(null) 
 const activeTab = ref('riepilogo')
 
+// Variabili preferiti e sessione 
+const utenteLoggato = ref(null)
+const isPreferita = ref(false)
+
 // Variabili per l'Annata
 const annataSelezionata = ref('25/26')
 const annateDisponibili = ref(['25/26'])
@@ -26,9 +31,6 @@ const annateDisponibili = ref(['25/26'])
 const partiteEspanse = ref([])
 const mostraTuttiRisultati = ref(false)
 const mostraTuttoCalendario = ref(false)
-
-// Variabile per la stellina dei preferiti (simulata per ora, poi andrà collegata al DB/Localstorage)
-const isPreferita = ref(false)
 
 const pluraleRuolo = {
   'Portiere': 'Portieri',
@@ -70,10 +72,65 @@ const fetchDettagli = async () => {
   }
 }
 
-// Funzione per la stellina
-const togglePreferito = () => {
-  isPreferita.value = !isPreferita.value
-  // Qui in futuro potrai fare una fetch al backend (es. POST /api/utente/preferiti) per salvare la scelta nel DB
+// --- LOGICA PREFERITI ---
+const checkSession = async () => {
+  try {
+    const response = await fetch('/api/me')
+    if (response.ok) {
+      utenteLoggato.value = await response.json()
+      await checkSePreferito()  // Se è loggato, controlla se è nei preferiti
+    } else {
+      utenteLoggato.value = null
+      isPreferita.value = false
+    }
+  } catch (error) {
+    console.error("Errore sessione: ", error)
+  }
+}
+
+const checkSePreferito = async () => {
+  try {
+    const response = await fetch('/api/preferiti')
+    if (response.ok) {
+      const data = await response.json()
+
+      // Controllo se l'ID di questa competizione è nell'array dei preferiti
+      isPreferita.value = data.squadre.some(s => s.id === idSquadra.value)    // "qui uso il '.value' perchè in questa pagina idSquadra è una variabile computed (reattiva)"
+    }
+  } catch (error) {
+    console.error("Errore controllo preferiti: ", error)
+  }
+}
+
+const togglePreferito = async () => {
+  if(!utenteLoggato.value) {
+    showToast("Devi accedere per aggiungere ai preferiti.", "warning")
+    return
+  }
+  try {
+    if (isPreferita.value){   // Se la stellina è piena, significa che se viene premuta è per levare tra i preferiti la competizione
+      // Rimuovi dai preferiti
+      const response = await fetch(`/api/preferiti/squadre/${idSquadra.value}`, { method: 'DELETE' })
+      if(response.ok){
+        isPreferita.value = false
+        showToast("Squadra rimossa dai preferiti", "info")
+      }
+    } else {
+      // Aggiunta ai preferiti
+      const response = await fetch(`/api/preferiti/squadre`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_squadra: idSquadra.value })
+      })
+      if (response.ok) {
+        isPreferita.value = true
+        showToast("Squadra aggiunta ai preferiti!", "success")
+      }
+    }
+
+  } catch (error) {
+    console.error("Errore di connessione: ", error)
+  }
 }
 
 // Se l'utente cambia annata dal menu a tendina
@@ -89,9 +146,9 @@ watch(annataSelezionata, (newVal, oldVal) => {
 // Se l'utente clicca su un'altra squadra (l'URL cambia)
 watch(idSquadra, () => {
   activeTab.value = 'riepilogo' // Resetta la tab
-  // In futuro qui andrà controllato dal server se la nuova squadra è nei preferiti dell'utente
   isPreferita.value = false 
   fetchDettagli()
+  checkSession()    // Ricontrolla i preferiti per la nuova squadra
 })
 
 // --- COMPUTED PROPERTIES ---
@@ -213,7 +270,10 @@ const formattaData = (dataStringa) => {
   return new Date(dataStringa).toLocaleDateString('it-IT', opzioni)
 }
 
-onMounted(() => fetchDettagli())
+onMounted(() => {
+  fetchDettagli()
+  checkSession()
+})
 </script>
 
 <template>
@@ -234,18 +294,18 @@ onMounted(() => fetchDettagli())
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 bg-white p-4 rounded-4 shadow-sm border">
         <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid rounded" style="width: 100px; height: 100px; object-fit: contain;">
         <div class="w-100 text-center text-md-start my-3">
-            <h1 class="fw-bold mb-1 d-md-flex align-items-center text-center">
-              {{ squadra.nome }}
+            <h1 class="fw-bold mb-1 d-md-flex align-items-center text-center justify-content-center justify-content-md-start">
+              <!-- Il testo viene spaziato con me-3 (margin-end) -->
+              <span class="me-3">{{ squadra.nome }}</span>
               
-              <button 
-                class="btn btn-link fs-4 p-0 ms-md-3 text-decoration-none transition-all" 
-                :class="isPreferita ? 'text-warning' : 'text-success'"
-                @click="togglePreferito" 
+              <!-- L'icona diventa l'elemento cliccabile diretto -->
+              <i 
+                class="bi fs-3" 
+                :class="isPreferita ? 'bi-star-fill text-warning' : 'bi-star text-secondary'" 
+                style="cursor: pointer; transition: transform 0.2s;" 
+                @click="togglePreferito"
                 :title="isPreferita ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
-                style="outline: none; box-shadow: none;"
-              >
-                {{ isPreferita ? '★' : '☆' }}
-              </button>
+              ></i>
             </h1>
             
             <p class="text-muted mb-0 fs-5">

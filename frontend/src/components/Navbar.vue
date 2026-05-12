@@ -289,56 +289,21 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                 </div>
                 <div class="offcanvas-body">
                     <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row align-items-lg-center">
-                        <li class="nav-item order-1 order-lg-4 mb-3 mb-lg-0">
-                            <div class="d-flex align-items-center">
-                                <div class="nav-item dropdown">
-                                    <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center" type="button" @click="toggleDropdown"> 
-                                        <span v-if="utenteLoggato">                                         
-                                            👤 Ciao, {{ utenteLoggato.username }}
-                                            <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span>  
-                                        </span>
-                                        <span v-else>👤 Profilo</span>                                      
-                                    </button>
-
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;" data-bs-dismiss="offcanvas"> 
-                                        <template v-if="!utenteLoggato">            
-                                            <li>
-                                                <a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true; isDropdownOpen = false"> 
-                                                    <i class="bi bi-box-arrow-in-right me-2"></i>Accedi / Registrati                 
-                                                </a>
-                                            </li>
-                                        </template>
-
-                                        <template v-else>
-                                            <li>
-                                                <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
-                                                    <i class="bi bi-person me-2"></i>Il mio Profilo
-                                                </RouterLink>
-                                            </li>
-                                            <li v-if="utenteLoggato.ruolo === 'premium'">
-                                                <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
-                                                    <i class="bi bi-trophy me-2"></i>Le mie Competizioni
-                                                </RouterLink>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
-                                                    <i class="bi bi-box-arrow-left me-2"></i>Esci
-                                                </a>
-                                            </li>
-                                        </template>
-                                    </ul>
-                                </div>
-                            </div>
+                        
+                        <li class="nav-item order-3 order-lg-1 me-lg-3" data-bs-dismiss="offcanvas">
+                            <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
                         </li>
                         <li class="nav-item order-2 order-lg-2" data-bs-dismiss="offcanvas">
                             <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
                         </li>
-                        <li class="nav-item order-3 order-lg-1 me-lg-3" data-bs-dismiss="offcanvas">
-                            <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
-                        </li>
-                        <li class="nav-item order-4 order-lg-3 d-none d-lg-block mx-lg-2 ms-lg-auto">
-                            <form class="d-flex align-items-center me-3 position-relative w-auto" role="search" @submit.prevent="eseguiRicerca"> 
+
+                        <!--BARRA DI RICERCA-->
+                        <!-- ========================================== -->
+                        <!-- BARRA DI RICERCA DESKTOP                   -->
+                        <!-- ========================================== -->
+                        <!-- CORREZIONE: Aggiunto ms-lg-auto per spingere l'elemento a destra. Aggiunto me-lg-3 per distanziarlo dai bottoni. Rimosso flex-grow-1. -->
+                        <li class="nav-item order-4 order-lg-3 d-none d-lg-block ms-lg-auto me-lg-3" style="max-width: 370px;">
+                            <form class="d-flex align-items-center position-relative w-100" role="search" @submit.prevent="eseguiRicerca"> 
                                 <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
                                     <option value="tutto">Tutto</option>
                                     <option value="squadre">Squadre</option>
@@ -348,7 +313,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                                 </select>
 
                                 <div class="position-relative w-100">
-                                    <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                                    <input class="form-control w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
                                     <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
                                         <li v-if="suggerimenti.squadre.length>0">
                                             <h6 class="dropdown-header text-success">Squadre</h6>
@@ -386,6 +351,59 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                                 </div>
                                 <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
                             </form>
+                        </li>
+
+                        <!-- ========================================== -->
+                        <!-- ZONA PROFILO / BOTTONI ACCEDI-ISCRIVITI    -->
+                        <!-- ========================================== -->
+                        <!-- CORREZIONE: Rimossa la classe ms-lg-auto. La spinta verso destra è ora fornita dall'elemento precedente. -->
+                        <li class="nav-item order-1 order-lg-4 mb-3 mb-lg-0">
+                            <div class="d-flex align-items-center">
+                                
+                                <!-- CASO 1: UTENTE NON LOGGATO (Mostra i due bottoni) -->
+                                <div v-if="!utenteLoggato" class="d-flex flex-column flex-lg-row gap-2 w-100">
+                                    <button class="btn btn-outline-light fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true" data-bs-dismiss="offcanvas">
+                                        Accedi
+                                    </button>
+                                    <button class="btn btn-success fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = false" data-bs-dismiss="offcanvas">
+                                        Iscriviti
+                                    </button>
+                                </div>
+
+                                <!-- CASO 2: UTENTE LOGGATO (Mostra il menu a tendina) -->
+                                <div v-else class="nav-item dropdown w-100">
+                                    <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center w-100" type="button" @click="toggleDropdown"> 
+                                        <span class="text-nowrap">👤 Ciao, {{ utenteLoggato.username }} <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span></span>
+                                    </button>
+
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;" data-bs-dismiss="offcanvas"> 
+                                        <li>
+                                            <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
+                                                <i class="bi bi-person me-2"></i>Il mio Profilo
+                                            </RouterLink>
+                                        </li>
+                                        
+                                        <!-- NUOVO LINK: I MIEI PREFERITI -->
+                                        <li>
+                                            <RouterLink class="dropdown-item py-2" to="/preferiti" @click="isDropdownOpen = false">
+                                                <i class="bi bi-star-fill text-warning me-2"></i>I miei Preferiti
+                                            </RouterLink>
+                                        </li>
+                                        
+                                        <li v-if="utenteLoggato.ruolo === 'premium'">
+                                            <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
+                                                <i class="bi bi-trophy me-2"></i>Le mie Competizioni
+                                            </RouterLink>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
+                                                <i class="bi bi-box-arrow-left me-2"></i>Esci
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </li>
                     </ul>
                 </div>
