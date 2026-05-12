@@ -1,11 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
-import { showToast } from '@/utils/toastStore';     // Gestione errori (senza l'uso dell'alert)
+import { showToast } from '@/utils/toastStore';
 
 const route = useRoute()
 const router = useRouter()
-const idCompetizione = route.params.id      // Viene preso l'ID dall'url
+const idCompetizione = route.params.id
 
 const competizione = ref(null)
 const squadre = ref([])
@@ -31,27 +31,27 @@ const fetchDati = async () => {
 
         if (response.ok) {
             const data = await response.json()
-            console.log(data)
             competizione.value = data.competizione
             squadre.value = data.squadre
-            // Aggiunta della proprietà 'isEditing' a ogni partita per la gestione della modifica inline
+            
+            // Aggiungo proprietà reattive locali per gestire l'editing inline di ogni singola partita
             partite.value = data.partite.map(p => ({ 
                 ...p, 
                 isEditing: false,
-                giocatoriDisponibili: [],     // Conterrà i giocatori scaricati dal server
-                marcatoriTemp: [],            // Conterrà i marcatori che si stato aggiungendo nel form
-                marcatoreSelezionato: '',     // Conterrà il marcatore del menu a tendina
-                golSelezionati: 1             // Conterrà l'input numerico (quanti gol ha fatto x)
+                giocatoriDisponibili: [],     
+                marcatoriTemp: [],            
+                marcatoreSelezionato: '',     
+                golSelezionati: 1             
             }))
         }
     } catch (error){
-        console.error("Errore:", error)
+        console.error("Errore fetch calendario:", error)
     } finally {
         caricamento.value = false
     }
 }
 
-// COMPUTED: Raggruppa le partite per Giornata
+// Raggruppa le partite per Giornata per stamparle a blocchi
 const partitePerGiornata = computed(() => {
     const gruppi = {}
     partite.value.forEach(p => {
@@ -61,10 +61,8 @@ const partitePerGiornata = computed(() => {
     return gruppi
 })
 
-// 2. Creazione e aggiunta di una nuova partita nel calendario
 const aggiungiPartita = async () => {
-
-    // Controllo anche frontend del far scegliere delle squadre diversi che si scontrano
+    // Controllo logico frontend
     if (nuovaSquadraCasa.value === nuovaSquadraTrasferta.value){
         showToast("Una squadra non può giocare contro se stessa!", 'warning');
         return;
@@ -85,28 +83,24 @@ const aggiungiPartita = async () => {
         const data = await response.json()
 
         if(response.ok){
-            // Aggiunta della nuova partita
+            // Aggiungo la nuova partita all'array reattivo inizializzando i campi per l'editing
             partite.value.push({ ...data.partita, isEditing: false, giocatoriDisponibili: [], marcatoriTemp: [] })
             
-            // Pulizia della form
             nuovaSquadraCasa.value = ''
             nuovaSquadraTrasferta.value = ''
             nuovaDataOra.value = ''
-            
             errorMessage.value = ''
 
             showToast("Partita programmata con successo!", 'success');
-            
         } else {
             showToast(data.error || "Errore durante il salvataggio", 'danger');
         }
 
     } catch (error){
-        errorMessage.value = "Errore di connessione" 
+        errorMessage.value = "Errore di connessione al server" 
     }
 }
 
-// 3. Elimina la Partita
 const eliminaPartita = async (id) => {
     if(!confirm("Sei sicuro di voler eliminare questa partita?")) return;
     
@@ -114,30 +108,27 @@ const eliminaPartita = async (id) => {
         const response = await fetch(`/api/partite/${id}`, { method: 'DELETE' })
 
         if(response.ok){
-            // Rimozione dell'elemento dall'array reattivo
             partite.value = partite.value.filter(p => p.id !== id)
             showToast("Eliminazione corretta della partita.", 'info');
         } else {
             showToast("Errore di rete durante l'eliminazione", 'danger')
         }
     } catch (error){
-        console.error("Errore: ", error)
+        console.error("Errore eliminazione partita: ", error)
     }
 }
 
-// ============================
-    // LOGICA MARCATORI
-// ============================
 
-// 1. Modalità modifica e scaricamento dei giocatori
+// LOGICA MARCATORI (EDITING INLINE)
+
 const apriModifica = async (partita) => {
     partita.isEditing = true
-    partita.marcatoreSelezionato = '';      // Reset form
+    partita.marcatoreSelezionato = '';      
     partita.minutoSelezionato = ''
     partita.tipoGolSelezionato = ''
     partita.assistmanSelezionato = ''
 
-    // Copia dei marcatori già salvati nel DB dentro l'array temporaneo
+    // Copio i marcatori già presenti nel DB in un array temporaneo per permettere all'utente di modificarli/cancellarli
     partita.marcatoriTemp = partita.marcatori ? partita.marcatori.map(m => ({
         id_giocatore: m.id_giocatore,
         nome_cognome: m.giocatore.nome_cognome,
@@ -149,38 +140,35 @@ const apriModifica = async (partita) => {
         nome_assistman: m.assistman?.nome_cognome
     })) : []
 
-    // Scaricamento dei giocatori delle due squadre
+    // Scarico i giocatori delle due squadre per popolare le select
     try {
         const response = await fetch(`/api/partite/${partita.id}/giocatori-disponibili`)
         if(response.ok) {
             partita.giocatoriDisponibili = await response.json()
         }
     }  catch (error) {
-        console.error("Errore recupero giocatori: ", error)
+        console.error("Errore recupero giocatori disponibili: ", error)
     }
 }
 
-// 2. Aggiunta di un marcatore all'array temporaneo
 const aggiungiMarcatoreTemp = (partita) => {
     const idGiocatore = partita.marcatoreSelezionato;
     const minuto = partita.minutoSelezionato;
     const tipoGol = partita.tipoGolSelezionato;
     const idAssistman = partita.assistmanSelezionato || null;
 
-    // Capi obbligatori
     if(!idGiocatore || !minuto) return;
 
-    // Marcatore e assistman devono essere diversi
     if(idAssistman && idGiocatore === idAssistman){
-        showTest("Errore logico: Il marcatore e l'autore dell'assist non posso coincidere.", 'warning');
+        // BUG FIX: Era showTest invece di showToast
+        showToast("Errore logico: Il marcatore e l'autore dell'assist non possono coincidere.", 'warning');
         return;
     }
 
     const giocatore = partita.giocatoriDisponibili.find(g => g.id === idGiocatore);
     if(!giocatore) return;
 
-    // Validazione cardinalità (Non si possono assegnare più marcatori di quanti gol segnati)
-    //    Determinazione del limite massimo di reti
+    // Validazione cardinalità: non posso inserire più marcatori dei gol effettivamente segnati
     let maxGolConsentiti = 0;
     if(giocatore.id_squadra === partita.id_squadra_casa) {
         maxGolConsentiti = parseInt(partita.gol_casa) || 0;
@@ -188,51 +176,42 @@ const aggiungiMarcatoreTemp = (partita) => {
         maxGolConsentiti = parseInt(partita.gol_trasferta) || 0;
     }
     
-    //      Calcolo delle reti già registrate
     const golGiaInseriti = partita.marcatoriTemp.filter(m => m.id_squadra === giocatore.id_squadra).length;
     
-    //      Valutamento del superamento del limite
     if (golGiaInseriti >= maxGolConsentiti){
-        showToast(`Errore di cardinalità: Impossibile inserire ulteriori marcatori. Il risultato indicato prevede un massimo di ${maxGolConsentiti} reti per quest squadra.`);
+        showToast(`Errore: Impossibile inserire ulteriori marcatori. Il risultato prevede un massimo di ${maxGolConsentiti} reti per questa squadra.`, 'warning');
         return;
     }
 
-    // Estrazione dell'oggetto assistman (se presente)
     let assistmanNome = null;
-
     if(idAssistman){
         const assistmanObj = partita.giocatoriDisponibili.find(g => g.id === idAssistman);
         assistmanNome = assistmanObj ? assistmanObj.nome_cognome : null;
     }
 
-    // Aggiunta del singolo evento GOL
     partita.marcatoriTemp.push({
         id_giocatore: giocatore.id,
         nome_cognome: giocatore?.nome_cognome,
         id_squadra: giocatore?.id_squadra,
-        gol: 1,         // è un singolo evento di gol
+        gol: 1,         
         minuto: parseInt(minuto),
         tipo_gol: tipoGol,
         id_assistman: idAssistman,
-        nome_assistman: assistmanNome    // Solo per la visualizzazione a schermo
+        nome_assistman: assistmanNome    
     });
     
-
-    // Resent campi del form
+    // Reset campi form inline
     partita.marcatoreSelezionato = '';
     partita.minutoSelezionato = '';
     partita.tipoGolSelezionato = '';
     partita.assistmanSelezionato = ''; 
 }
 
-// 3. Rimozione di un marcatore dall'array temporaneo
 const rimuoviMarcatoreTemp = (partita, index) => {
     partita.marcatoriTemp.splice(index, 1)
 }
 
-
-// AGGIORNAMENTO FINALE
-// Aggiornamento partite (inserimento risultato nel DB)
+// Salva definitivamente il risultato e i marcatori nel DB
 const aggiornaRisultato = async (partita) => {
     try {
         const response = await fetch(`/api/partite/${partita.id}`, {
@@ -242,40 +221,34 @@ const aggiornaRisultato = async (partita) => {
                 gol_casa: partita.gol_casa,
                 gol_trasferta: partita.gol_trasferta,
                 stato: partita.stato,
-                lista_marcatori: partita.marcatoriTemp      // Invio array al backend
+                lista_marcatori: partita.marcatoriTemp      
             })
         })
 
         if(response.ok){
             const data = await response.json()
 
-            // Aggiornamento della partita con i nuovi dati dal DB
+            // Aggiorno la partita locale con i dati freschi dal DB e chiudo l'editing
             const index = partite.value.findIndex(p => p.id === partita.id)
             partite.value[index] = { ...data.partita, isEditing: false, giocatoriDisponibili: [], marcatoriTemp: [] }
-            
+            showToast("Risultato aggiornato!", "success")
         } else {
-            alert("Errore nell'aggiornamento")
+            showToast("Errore nell'aggiornamento del risultato", "danger")
         }
 
     } catch (error){
-        console.error("Errore: ", error)
+        console.error("Errore aggiornamento risultato: ", error)
     }
 }
 
-
-
-// Utility per formattare la data
 const formattaData = (dataStringa) => {
     const opzioni = {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }
     return new Date(dataStringa).toLocaleString('it-IT', opzioni)
 }
 
-// Inizializzazione automatica al rendering del componente
 onMounted(() => {
     fetchDati()
 })
-
-
 </script>
 
 
@@ -287,14 +260,12 @@ onMounted(() => {
         </div>
 
         <div v-else-if="competizione">
-            <!--INTESTAZIONE-->
             <div class="mb-4 border-bottom pb-2 border-warning">
                 <RouterLink to="/mie-competizioni" class="btn btn-sm btn-outline-secondary mb-2">⬅ Torna alle Competizioni</RouterLink>
                 <h1 class="fw-bold text-warning">📅 Calendario: {{ competizione.nome }}</h1>
             </div>
 
             <div class="row g-4">
-                <!--FORM aggiunta PARTITA-->
                 <div class="col-lg-4">
                     <div class="card shadow-sm border-warning sticky-top" style="top: 100px; z-index: 1;">
                         <div class="card-header bg-warning text-dark fw-bold">
@@ -340,7 +311,6 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!-- LISTA PARTITE divisa per giornata -->
                 <div class="col-lg-8">
                     <div v-if="partite.length === 0" class="alert alert-info text-center">
                         Il calendario è vuoto. Programma la prima partita della competizione!
@@ -353,7 +323,6 @@ onMounted(() => {
                             <ul class="list-group list-group-flush shadow-sm border">
                                 <li v-for="partita in lista" :key="partita.id" class="list-group-item p-3">
 
-                                    <!--Vista normale-->
                                     <div v-if="!partita.isEditing">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div class="text-muted small w-25">
@@ -365,7 +334,6 @@ onMounted(() => {
 
                                             <div class="d-flex align-items-center justify-content-center w-50">
                                                 <span class="fw-bold fs-5 text-end w-50">{{ partita.squadra_casa?.nome }}</span>
-                                                <!-- Mostra VS se programmata, altrimenti il risultato -->
                                                 <span v-if="partita.stato === 'programmata'" class="badge bg-secondary mx-3 fs-6">VS</span>
                                                 <span v-else class="badge bg-dark mx-3 fs-5">{{ partita.gol_casa }} - {{ partita.gol_trasferta }}</span>
                                                 <span class="fw-bold fs-5 text-start w-50">{{ partita.squadra_trasferta?.nome }}</span>
@@ -377,7 +345,6 @@ onMounted(() => {
                                             </div>
                                         </div>
 
-                                        <!-- Mostra i marcatori sotto il risultato (se ci sono) -->
                                         <div v-if="partita.marcatori && partita.marcatori.length > 0" class="mt-3 pt-2 border-top text-center small">
                                             <div class="text-muted fw-bold mb-2 text-center">⚽ Reti: </div>
                                             
@@ -399,9 +366,7 @@ onMounted(() => {
                                         </div>
                                     </div>
 
-                                    <!--VISTA MODIFICATA-->
                                     <div v-else class="bg-light p-3 rounded border border-primary">
-                                        <!--Modifica risultato-->
                                         <div class="row align-items-center text-center mb-3">
                                             <div class="col-4 fw-bold">{{ partita.squadra_casa?.nome }}</div>
                                             <div class="col-4">
@@ -416,7 +381,6 @@ onMounted(() => {
 
                                         <hr>
 
-                                        <!--GESTIONE MARCATORI-->
                                         <div class="mb-3">
                                             <label class="fw-bold text-primary mb-2">⚽ Aggiungi un marcatore</label>
 
@@ -460,7 +424,6 @@ onMounted(() => {
                                                     <label class="small text-muted fw-semibold">Assist (Opzionale)</label>
                                                     <select class="form-select form-select-sm" v-model="partita.assistmanSelezionato">
                                                         <option value="">Nessuno</option>
-                                                        <!--Stessa cosa fatta per i marcatori anche qui-->
                                                         <optgroup :label="partita.squadra_casa?.nome">
                                                             <option v-for="g in partita.giocatoriDisponibili.filter(g => g.id_squadra === partita.id_squadra_casa)" :key="g.id" :value="g.id">
                                                                 {{ g.nome_cognome }}
@@ -476,14 +439,12 @@ onMounted(() => {
                                                 </div>
 
                                                 <div class="col-12 text-end mt-2">
-                                                    <!--Bottone per aggiungerli-->
                                                     <button type="button" class="btn btn-sm btn-primary fw-bold" @click="aggiungiMarcatoreTemp(partita)">
                                                         + Aggiungi Gol
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <!--Lista marcatori (aggiunti precedentemente)-->
                                             <ul class="list-group mt-2" v-if="partita.marcatoriTemp.length > 0">
                                                 <li v-for="(m, index) in partita.marcatoriTemp" :key="index" class="list-group-item d-flex justify-content-between align-items-center py-2 bg-light">
                                                     <span>
@@ -504,8 +465,6 @@ onMounted(() => {
                                         </div>
 
                                         <hr>
-
-                                        <!--Salvataggio-->
 
                                         <div class="d-flex justify-content-center align-items-center">
                                             <select class="form-select w-auto" v-model="partita.stato">

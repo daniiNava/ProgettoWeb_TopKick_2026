@@ -3,10 +3,10 @@ import { toastState, closeToast } from '@/utils/toastStore';
 </script>
 
 <template>
-    <!--Contenitore fisso in basso a dx. z-index altissimo per stare sopra a tutto-->
+    <!-- Contenitore fisso in basso a dx, z-index alto per stare sopra le modali -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1060;">
 
-        <!--Usiamo la transizione di Vue per un'entrata/uscita morbida-->
+        <!-- Transizione di Vue per un'entrata/uscita fluida -->
         <transition name="toast-fade">
             <div
                 v-if="toastState.visible"
@@ -18,7 +18,7 @@ import { toastState, closeToast } from '@/utils/toastStore';
             >
                 <div class="d-flex">
                     <div class="toast-body fw-semibold fs-6">
-                        <!--Icone dinamiche in base al tema-->
+                        <!-- Icone dinamiche in base al tipo di notifica -->
                         <span v-if="toastState.theme === 'success'" class="me-2">✅</span>
                         <span v-if="toastState.theme === 'danger'" class="me-2">❌</span>
                         <span v-if="toastState.theme === 'warning'" class="me-2">⚠️</span>
@@ -38,17 +38,17 @@ import { toastState, closeToast } from '@/utils/toastStore';
 </template>
 
 <style scoped>
-/* Animazione fluida di entrata e uscita */
+/* Animazione custom per il toast */
 .toast-fade-enter-active,
 .toast-fade-leave-active {
   transition: all 0.3s ease;
 }
 .toast-fade-enter-from {
   opacity: 0;
-  transform: translateY(20px); /* Entra dal basso */
+  transform: translateY(20px);
 }
 .toast-fade-leave-to {
   opacity: 0;
-  transform: translateY(20px); /* Esce verso il basso */
+  transform: translateY(20px);
 }
 </style>

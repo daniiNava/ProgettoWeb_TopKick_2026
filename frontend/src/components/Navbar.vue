@@ -1,65 +1,39 @@
-<script setup> // Utilizzo di Vue 3, con all'interno variabili, funzioni e/o importazioni asposte in <tamplate>
-// Per ora la Navbar è statica. In futuro qui gestiremo il tema scuro/chiaro e il login
+<script setup>
 import { ref, onMounted } from 'vue'
-import { Modal } from 'bootstrap'   // Importa Modal da bootstrap per chiuderlo via JS
-import {useRouter} from 'vue-router'
+import { Modal } from 'bootstrap'
+import { useRouter } from 'vue-router'
 import { showToast } from '@/utils/toastStore'
-// Variabile per la gestione degli errori
+
+const router = useRouter()
+
+// Variabili di stato globale e UI
+const utenteLoggato = ref(null)  
+const isLoginMode = ref(true)       // true = Login, false = Registrazione
+const isDropdownOpen = ref(false)   // Gestione manuale tendina profilo
 const errorMessage = ref('')
 
-const utenteLoggato = ref(null)  
-
-const isLoginMode = ref(true)   // Variabile per scambiare la vista del popup tra "Registrazione" e "Login"
-
-const isDropdownOpen = ref(false)   // Var. per il controllo del menu a tendina
-
-const isDarkMode = ref(false) // Variabile reattiva per sapere in che tema siamo
-
-// Funzione per inizializzare il tema quando si apre il sito
-const initTheme = () => {
-  // Leggiamo dal localStorage se l'utente aveva già scelto un tema in passato
-  const savedTheme = localStorage.getItem('theme')
-  
-  if (savedTheme === 'dark') {
-    isDarkMode.value = true
-    document.documentElement.setAttribute('data-bs-theme', 'dark') // Applica il tema scuro di Bootstrap
-  } else {
-    isDarkMode.value = false
-    document.documentElement.setAttribute('data-bs-theme', 'light') // Applica il tema chiaro
-  }
-}
-
-// Funzione che scatta quando si clicca il bottone Sole/Luna
-const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value // Inverte il valore (da true a false o viceversa)
-  
-  const newTheme = isDarkMode.value ? 'dark' : 'light'
-  document.documentElement.setAttribute('data-bs-theme', newTheme) // Aggiorna l'HTML
-  localStorage.setItem('theme', newTheme) // Salva la scelta nel browser
-}
-
-const router=useRouter()
-// Variabili per i form (stringhe reattive: vengono modificate sia dall'utente che scrive sia se il codice svuota la variabile)
-const loginEmail    = ref('')
+// Variabili reattive per i form di Auth
+const loginEmail = ref('')
 const loginPassword = ref('')
-const regUsername   = ref('')
-const regEmail      = ref('')
-const regPassword   = ref('')
+const regUsername = ref('')
+const regEmail = ref('')
+const regPassword = ref('')
 
-// Variabili reattive per la barra di ricerca
-const testoRicerca=ref('')
-const tipoRicerca=ref('tutto')
-const suggerimenti=ref(null) // conterrà i risultati in tempo reale, della ricerca
-let timeoutRicerca=null // serve per il debouncing -> tecnica che coinsiste nell'aspettare che l'utente smetta di digitare per 100ms prima di far partire la chiamata al server senza intasarlo 
+// Variabili per la barra di ricerca intelligente
+const testoRicerca = ref('')
+const tipoRicerca = ref('tutto')
+const suggerimenti = ref(null)
+let timeoutRicerca = null // Timer per il debouncing
 
+// --- LOGICA AUTENTICAZIONE ---
 
-// 1. Funzione che controlla se è presente una SESSIONE ATTIVA
+// 1. Controlla se c'è una sessione attiva al caricamento
 const checkSession = async () => {
     try {
-        const response = await fetch('/api/me')     // Viene interrogata la rotta. Se il server dà 200, ... 
-        if(response.ok){                            // ... l'oggetto JSON restituito viene assegnato a utenteLoggato.value
+        const response = await fetch('/api/me')
+        if(response.ok){
             utenteLoggato.value = await response.json()
-        } else{
+        } else {
             utenteLoggato.value = null
         }
     } catch(error){
@@ -67,59 +41,53 @@ const checkSession = async () => {
     }
 }
 
-// Funzione secondaria per chiudere il popup
-const chiudiPopup = () => {     // Serve perchè l'invio tramite fetch del form non fa anche ricaricare la pagina
-    const modalElement = document.getElementById('authModal')       // viene recuperato l'elemento HTML attraverso il suo ID testuale
+// Funzione di supporto: chiude la modale di Bootstrap e pulisce il DOM
+const chiudiPopup = () => {
+    const modalElement = document.getElementById('authModal')
     if(modalElement){
-        const modalInstance = Modal.getInstance(modalElement)     // tramite le API native di Bootstrap ottiene l'oggetto logico 
-        if(modalInstance){
-            modalInstance.hide()     // scomparsa immediata dell'istanza                            // associato a quell'elemento a invoca il metodo .hide()
-        }
+        const modalInstance = Modal.getInstance(modalElement)
+        if(modalInstance) modalInstance.hide()
     }
     
-    // Sanificazione del DOM (rimozione artefatti visivi)
-    // Rimozione del blocco dello scorrimento imposto da Bootstrap
-    document.body.classList.remove('modal-open')        // Riammessa la possbilità di scrollare la pagina (prima bloccata per il popup)
+    // Hack necessario perché Vue e Bootstrap a volte litigano sul DOM:
+    // Rimuoviamo a mano gli sfondi scuri rimasti appesi e sblocchiamo lo scroll
+    document.body.classList.remove('modal-open')
     document.body.style.overflow = ''
     document.body.style.paddingRight = ''
-
-    // Individuazione ed eliminazione fisica di eventuali sfondi rimasti appesi nel DOM
-    const backdrops = document.querySelectorAll('.modal-backdrop')  // Query sul DOM per trovare tutti i div di oscuramento 
-    backdrops.forEach(backdrop => backdrop.remove())                // Se li trova li distrugge
+    const backdrops = document.querySelectorAll('.modal-backdrop')
+    backdrops.forEach(backdrop => backdrop.remove())
 }
 
-// 2. Funzione di LOGIN
+// 2. Esegue il Login
 const handleLogin = async () => {
-    try {                                               // richiesta HTTP Post formattata come JSON contenente payload estratti dalle variab. reattive
-        const response = await fetch('/api/login', {    // idem la funzione di registrazione
+    try {
+        const response = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: loginEmail.value, password: loginPassword.value })
         })
         const data = await response.json()
 
-        if(response.ok) {       // Se la richiesta ha esito positivo
-            await checkSession()    // Aggiornamento (dello stato globale) della Navbar in modo istantaneo
-            chiudiPopup()           // Chiamata a funzione secondaria (chiusura modale)
-            // Pulizia campi        // deallocazione dei dati in memoria
+        if(response.ok) {
+            await checkSession() // Aggiorna la UI istantaneamente
+            chiudiPopup()
+            
+            // Svuoto i campi
             loginEmail.value = ''
             loginPassword.value = ''
-            // Azzeramento eventuali errori precedenti
             errorMessage.value = ''
 
-            // TOAST DI SUCCESSO
             showToast(`Benvenuto ${utenteLoggato.value.username}!`, 'success')
-        } else{
+        } else {
             errorMessage.value = data.error
         }
-
     } catch(err) {
         errorMessage.value = "Errore di connessione al server"
     }
 }
 
-// 3. Funzione di REGISTRAZIONE
-const handleRegister = async () => {            // Stesse spiegazioni della funzione di login
+// 3. Esegue la Registrazione
+const handleRegister = async () => {
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
@@ -127,98 +95,101 @@ const handleRegister = async () => {            // Stesse spiegazioni della funz
             body: JSON.stringify({ username: regUsername.value, email: regEmail.value, password: regPassword.value })
         })
         const data = await response.json()
-
         
         if(response.ok) {
-            await checkSession()    // Aggiornamento della Navbar in modo istantaneo
-            chiudiPopup()           // Chiamata a funzione secondaria
-            // Pulizia campi
+            await checkSession()
+            chiudiPopup()
+            
             regUsername.value = ''
             regEmail.value = ''
             regPassword.value = ''
-        } else{
+            errorMessage.value = ''
+            
+            showToast("Registrazione completata!", 'success')
+        } else {
             errorMessage.value = data.error
         }
-
     } catch(error){
         errorMessage.value = "Errore di connessione al server"
     }
 }
 
-// 4. Funzione di LOGOUT
+// 4. Esegue il Logout
 const handleLogout = async () => {
     try {
         await fetch('/api/logout', { method: 'POST' })
-        utenteLoggato.value = null      // Aggiornamento in modo istantaneo della Navbar
-        isDropdownOpen.value = false    // Forza la chiusura del menu a tendina in caso di logout
+        utenteLoggato.value = null
+        isDropdownOpen.value = false // Chiude la tendina
+        
+        // Se l'utente era in una pagina protetta, lo rimandiamo alla home
+        if(router.currentRoute.value.path.includes('mie-competizioni') || router.currentRoute.value.path.includes('preferiti')) {
+            router.push('/')
+        }
 
-        // Nuovo TOAST INFORMATIVO
         showToast("Logout effettuato con successo.", 'info')
     } catch(error){
         console.error("Errore logout:", error)
     }
 }
 
-// Funzione di commutazione per il menu a tendina
 const toggleDropdown = () => {
     isDropdownOpen.value = !isDropdownOpen.value
 }
 
-// BARRA DI RICERCA
-const cercaLive= () => {
-    clearTimeout(timeoutRicerca) // cancella il timer precedente se l'utente sta ancora scrivendo 
+// --- LOGICA RICERCA INTELLIGENTE ---
 
-    // se ha scritto meno di tre caratteri nascondiamo la tendina 
-    if(testoRicerca.value.trim().length<3) {
-        suggerimenti.value=null 
+// Ricerca in tempo reale (con debouncing per non intasare il server)
+const cercaLive = () => {
+    clearTimeout(timeoutRicerca)
+
+    // Mostriamo i suggerimenti solo se ha scritto almeno 3 caratteri
+    if(testoRicerca.value.trim().length < 3) {
+        suggerimenti.value = null 
         return 
     }
 
-    timeoutRicerca=setTimeout(async() => {
+    timeoutRicerca = setTimeout(async () => {
         try {
-            const response= await fetch(`/api/ricerca?q=${testoRicerca.value}&tipo=${tipoRicerca.value}`)
+            const response = await fetch(`/api/ricerca?q=${testoRicerca.value}&tipo=${tipoRicerca.value}`)
             if (response.ok) {
-                suggerimenti.value=await response.json()
+                suggerimenti.value = await response.json()
             }
         } catch(error) {
             console.error("Errore live search:", error)
         }
-    }, 100)
-
+    }, 150) // Aspetta 150ms da quando l'utente smette di digitare
 }
 
-// Funzione di ricerca 
-const eseguiRicerca=()=> {
-    if(testoRicerca.value.trim()!=='') {
+// Invia la ricerca e cambia pagina
+const eseguiRicerca = () => {
+    if(testoRicerca.value.trim() !== '') {
         router.push({
-            path:'/ricerca',
-            query: {q: testoRicerca.value, tipo: tipoRicerca.value}
+            path: '/ricerca',
+            query: { q: testoRicerca.value, tipo: tipoRicerca.value }
         })
-        testoRicerca.value='' //svuota la barra dopo la ricerca 
-        suggerimenti.value=null //chiude la tendina dei suggerimenti 
-        isDropdownOpen.value=false // chiude la tendina del profilo se era aperta 
+        testoRicerca.value = ''
+        suggerimenti.value = null
+        isDropdownOpen.value = false
     }
 }
 
-// 2a Funzione secondaria per la barra di ricerca 
+// Cliccando su un suggerimento specifico
 const selezionaSuggerimento = (testo) => {
   testoRicerca.value = testo
   eseguiRicerca()
 }
 
-
-// Ciclo di vita
-onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione checkSession nel momento esatto in cui il componente
-    checkSession()      // Navbar viene inserito nell'albero DOM dek browser, garantendo che lo stato dell'utente venga verificato subito
-    initTheme()         // Controlla il tipo di tema selezionato nell ultimo accesso e lo inizializza
+// --- CICLO DI VITA ---
+onMounted(() => {
+    checkSession() // Controlla chi è loggato appena si carica il sito
 })
-
 </script>
 
 <template>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2"> 
         <div class="container-fluid px-4 d-flex align-items-center">
             
+            <!-- LOGO -->
             <RouterLink class="navbar-brand d-flex align-items-center w-0 w-lg-100 mx-auto" to="/">
                 <img 
                     src="/logo.png" 
@@ -227,6 +198,8 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                     style="height: 70px; width: auto; object-fit: contain; mix-blend-mode: screen;"
                 >
             </RouterLink>
+
+            <!-- RICERCA MOBILE -->
             <form class="d-flex align-items-center position-relative d-lg-none w-auto" role="search" @submit.prevent="eseguiRicerca"> 
                 <select class="form-select me-2 bg-dark text-white border-secondary" style="width: 40% !important;" v-model="tipoRicerca" @change="cercaLive"> 
                     <option value="tutto">Tutto</option>
@@ -237,40 +210,32 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                 </select>
 
                 <div class="position-relative flex-grow-1">
-                    <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                    <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                    
+                    <!-- Tendina suggerimenti Mobile -->
                     <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
-                        <li v-if="suggerimenti.squadre.length>0">
-                            <h6 class="dropdown-header text-success">Squadre</h6>
-                        </li>
+                        <li v-if="suggerimenti.squadre.length>0"><h6 class="dropdown-header text-success">Squadre</h6></li>
                         <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
                         </li>
 
-                        <li v-if="suggerimenti.giocatori.length>0">
-                            <h6 class="dropdown-header text-primary">Giocatori</h6>
-                        </li>
+                        <li v-if="suggerimenti.giocatori.length>0"><h6 class="dropdown-header text-primary">Giocatori</h6></li>
                         <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
                         </li>
 
-                        <li v-if="suggerimenti.competizioni.length>0">
-                            <h6 class="dropdown-header text-primary">Competizioni</h6>
-                        </li>
+                        <li v-if="suggerimenti.competizioni.length>0"><h6 class="dropdown-header text-primary">Competizioni</h6></li>
                         <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
                         </li>
 
-                        <li v-if="suggerimenti.notizie.length>0">
-                            <h6 class="dropdown-header text-primary">Notizie</h6>
-                        </li>
+                        <li v-if="suggerimenti.notizie.length>0"><h6 class="dropdown-header text-primary">Notizie</h6></li>
                         <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
                             <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
                         </li>
 
                         <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
-                        </li>
+                        <li><a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a></li>
                     </ul>
                 </div>
 
@@ -279,11 +244,13 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                         <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
                     </svg>
                 </button>
-                <button class="navbar-toggler border-0 ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+                <button class="navbar-toggler border-0 ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
             </form>
-            <div class="offcanvas offcanvas-end bg-dark" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+
+            <!-- MENU OFFCANVAS -->
+            <div class="offcanvas offcanvas-end bg-dark" tabindex="-1" id="offcanvasNavbar">
                 <div class="offcanvas-header">
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
@@ -297,11 +264,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                             <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
                         </li>
 
-                        <!--BARRA DI RICERCA-->
-                        <!-- ========================================== -->
-                        <!-- BARRA DI RICERCA DESKTOP                   -->
-                        <!-- ========================================== -->
-                        <!-- CORREZIONE: Aggiunto ms-lg-auto per spingere l'elemento a destra. Aggiunto me-lg-3 per distanziarlo dai bottoni. Rimosso flex-grow-1. -->
+                        <!-- RICERCA DESKTOP -->
                         <li class="nav-item order-4 order-lg-3 d-none d-lg-block ms-lg-auto me-lg-3" style="max-width: 370px;">
                             <form class="d-flex align-items-center position-relative w-100" role="search" @submit.prevent="eseguiRicerca"> 
                                 <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
@@ -313,54 +276,43 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                                 </select>
 
                                 <div class="position-relative w-100">
-                                    <input class="form-control w-100" type="search" placeholder="Cerca..." aria-label="Search" v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                                    <input class="form-control w-100" type="search" placeholder="Cerca..." v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
+                                    
+                                    <!-- Tendina suggerimenti Desktop -->
                                     <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
-                                        <li v-if="suggerimenti.squadre.length>0">
-                                            <h6 class="dropdown-header text-success">Squadre</h6>
-                                        </li>
+                                        <li v-if="suggerimenti.squadre.length>0"><h6 class="dropdown-header text-success">Squadre</h6></li>
                                         <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
                                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
                                         </li>
 
-                                        <li v-if="suggerimenti.giocatori.length>0">
-                                            <h6 class="dropdown-header text-primary">Giocatori</h6>
-                                        </li>
+                                        <li v-if="suggerimenti.giocatori.length>0"><h6 class="dropdown-header text-primary">Giocatori</h6></li>
                                         <li v-for="gio in suggerimenti.giocatori.slice(0, 3)" :key="'gio'+gio.id">
                                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(gio.nome_cognome)"> {{ gio.nome_cognome }}</a>
                                         </li>
 
-                                        <li v-if="suggerimenti.competizioni.length>0">
-                                            <h6 class="dropdown-header text-primary">Competizioni</h6>
-                                        </li>
+                                        <li v-if="suggerimenti.competizioni.length>0"><h6 class="dropdown-header text-primary">Competizioni</h6></li>
                                         <li v-for="comp in suggerimenti.competizioni.slice(0, 3)" :key="'comp'+comp.id">
                                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(comp.nome)"> {{ comp.nome }}</a>
                                         </li>
 
-                                        <li v-if="suggerimenti.notizie.length>0">
-                                            <h6 class="dropdown-header text-primary">Notizie</h6>
-                                        </li>
+                                        <li v-if="suggerimenti.notizie.length>0"><h6 class="dropdown-header text-primary">Notizie</h6></li>
                                         <li v-for="notizia in suggerimenti.notizie.slice(0, 3)" :key="'not'+notizia.id">
                                             <a class="dropdown-item text-truncate" href="#" @click.prevent="selezionaSuggerimento(notizia.titolo)"> {{ notizia.titolo }}</a>
                                         </li>
 
                                         <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a>
-                                        </li>
+                                        <li><a class="dropdown-item text-center text-muted small" href="#" @click.prevent="eseguiRicerca">Vedi tutti i risultati...</a></li>
                                     </ul>
                                 </div>
                                 <button class="btn btn-outline-success ms-2" type="submit">Cerca</button>
                             </form>
                         </li>
 
-                        <!-- ========================================== -->
-                        <!-- ZONA PROFILO / BOTTONI ACCEDI-ISCRIVITI    -->
-                        <!-- ========================================== -->
-                        <!-- CORREZIONE: Rimossa la classe ms-lg-auto. La spinta verso destra è ora fornita dall'elemento precedente. -->
+                        <!-- ZONA PROFILO / AUTH -->
                         <li class="nav-item order-1 order-lg-4 mb-3 mb-lg-0">
                             <div class="d-flex align-items-center">
                                 
-                                <!-- CASO 1: UTENTE NON LOGGATO (Mostra i due bottoni) -->
+                                <!-- UTENTE NON LOGGATO -->
                                 <div v-if="!utenteLoggato" class="d-flex flex-column flex-lg-row gap-2 w-100">
                                     <button class="btn btn-outline-light fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true" data-bs-dismiss="offcanvas">
                                         Accedi
@@ -370,7 +322,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                                     </button>
                                 </div>
 
-                                <!-- CASO 2: UTENTE LOGGATO (Mostra il menu a tendina) -->
+                                <!-- UTENTE LOGGATO -->
                                 <div v-else class="nav-item dropdown w-100">
                                     <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center w-100" type="button" @click="toggleDropdown"> 
                                         <span class="text-nowrap">👤 Ciao, {{ utenteLoggato.username }} <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span></span>
@@ -382,14 +334,11 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                                                 <i class="bi bi-person me-2"></i>Il mio Profilo
                                             </RouterLink>
                                         </li>
-                                        
-                                        <!-- NUOVO LINK: I MIEI PREFERITI -->
                                         <li>
                                             <RouterLink class="dropdown-item py-2" to="/preferiti" @click="isDropdownOpen = false">
                                                 <i class="bi bi-star-fill text-warning me-2"></i>I miei Preferiti
                                             </RouterLink>
                                         </li>
-                                        
                                         <li v-if="utenteLoggato.ruolo === 'premium'">
                                             <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
                                                 <i class="bi bi-trophy me-2"></i>Le mie Competizioni
@@ -411,6 +360,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
         </div>
     </nav>
 
+    <!-- MODALE LOGIN / REGISTRAZIONE -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> 
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
@@ -424,11 +374,13 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
 
                 <div class="modal-body p-4">
 
+                    <!-- Alert per gli errori -->
                     <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert"> 
                         <strong>Attenzione!</strong> {{ errorMessage }}
                         <button type="button" class="btn-close" @click="errorMessage = ''" aria-label="Close"></button>
                     </div>
 
+                    <!-- Form Login -->
                     <form v-if="isLoginMode" @submit.prevent="handleLogin">  
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Email</label>
@@ -441,6 +393,7 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
                         <button type="submit" class="btn btn-success w-100 fw-bold">Accedi</button>
                     </form>
 
+                    <!-- Form Registrazione -->
                     <form v-else @submit.prevent="handleRegister">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Username</label>
@@ -478,13 +431,13 @@ onMounted(() => {       // Istruisce il frameqork Vue ad eseguire la funzione ch
     </div>
 </template>
 
-<style>
-    /* Stile sfocato quando si apre il popup */
-    .modal-backdrop {
+<style scoped>
+    /* Effetto vetro smerigliato per lo sfondo della modale */
+    :deep(.modal-backdrop) {
         backdrop-filter: blur(5px);
         background-color: rgba(0, 0, 0, 0.6);
     }
-    .modal-backdrop.show {
+    :deep(.modal-backdrop.show) {
         opacity: 1;
     }
 </style>

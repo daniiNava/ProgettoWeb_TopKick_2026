@@ -271,9 +271,9 @@ onMounted(() => {
     transform: scale(1.1);
 }
 
-/* ----------------------------------------- */
-/* CAROSELLO 3D COVER FLOW                   */
-/* ----------------------------------------- */
+
+/* CAROSELLO 3D COVER FLOW */
+
 .coverflow-container {
     display: flex;
     align-items: center;

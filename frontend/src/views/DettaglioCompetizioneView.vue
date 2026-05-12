@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch, registerRuntimeCompiler } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { showToast } from '@/utils/toastStore'
 
@@ -14,19 +14,19 @@ const marcatoriRisolti = ref([])
 const caricamento = ref(true)
 const activeTab = ref('classifica')
 
-// Variabili preferiti e sessione 
+// Gestione utente e preferiti
 const utenteLoggato = ref(null)
 const isPreferita = ref(false)
 
-// Variabili per l'Annata
+// Filtri annata
 const annataSelezionata = ref(route.query.annata || '25/26');
 const annateDisponibili = ref(['23/24','24/25','25/26'])
 
-// Variabili per l'UI della Giornata e Dettagli Partita
+// UI Calendario
 const giornataSelezionata = ref(null);
 const partiteEspanse = ref([]); 
 
-// --- FETCH DEI DATI ---
+// Recupero tutti i dati della competizione
 const fetchDettagli = async () => {
   caricamento.value = true;
   try {
@@ -39,7 +39,7 @@ const fetchDettagli = async () => {
       notizie.value = data.notizie;
     }
   } catch (error) { 
-    console.error(error); 
+    console.error("Errore fetch dettagli competizione:", error); 
   } finally { 
     caricamento.value = false;
   }
@@ -51,7 +51,7 @@ const checkSession = async () => {
     const response = await fetch('/api/me')
     if (response.ok) {
       utenteLoggato.value = await response.json()
-      await checkSePreferito()  // Se è loggato, controlla se è nei preferiti
+      await checkSePreferito() 
     } else {
       utenteLoggato.value = null
       isPreferita.value = false
@@ -77,7 +77,7 @@ const checkSePreferito = async () => {
 
 const togglePreferito = async () => {
   if(!utenteLoggato.value) {
-    showToast("Devi accede per aggiungere i preferiti.", "warning")
+    showToast("Devi accedere per aggiungere ai preferiti.", "warning")
     return
   }
   try {
@@ -89,7 +89,6 @@ const togglePreferito = async () => {
         showToast("Competizione rimossa dai preferiti", "info")
       }
     } else {
-      // Aggiunta ai preferiti
       const response = await fetch(`/api/preferiti/competizioni`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,13 +99,12 @@ const togglePreferito = async () => {
         showToast("Competizione aggiunta ai preferiti!", "success")
       }
     }
-
   } catch (error) {
     console.error("Errore di connessione: ", error)
   }
 }
 
-// --- COMPUTED PROPERTIES: PARTITE ---
+// --- RAGGRUPPAMENTO PARTITE ---
 const partiteGiocate = computed(() => partite.value.filter(p => p.stato === 'finita').reverse())
 const partiteDaGiocare = computed(() => partite.value.filter(p => p.stato !== 'finita'))
 const prossimePartite = computed(() => partiteDaGiocare.value.slice(0, 4))
@@ -127,7 +125,7 @@ const partitePerGiornata = computed(() => {
   return giornate;
 });
 
-// Imposta l'ultima giornata non appena le partite vengono caricate e raggruppate
+// Seleziona in automatico l'ultima giornata disponibile appena caricano i dati
 watch(partitePerGiornata, (nuoveGiornate) => {
   const giornateKeys = Object.keys(nuoveGiornate);
   if (giornateKeys.length > 0 && !giornataSelezionata.value) {
@@ -135,7 +133,7 @@ watch(partitePerGiornata, (nuoveGiornate) => {
   }
 });
 
-// --- FUNZIONI DI SUPPORTO PER I GOL E L'UI ---
+// --- FUNZIONI UI PER I TABELLINI ---
 const toggleDettagliPartita = (partitaId) => {
   const index = partiteEspanse.value.indexOf(partitaId);
   if (index === -1) {
@@ -155,7 +153,7 @@ const checkRigore = (tipo) => {
   return t === 'rigore' || t === 'penalty';
 };
 
-// --- LOGICA DI ASSEGNAZIONE GOL (CASA) ---
+// Smistamento marcatori Casa/Trasferta
 const getMarcatoriCasa = (partita) => {
   if (!partita || !partita.squadra_casa || !partita.squadra_trasferta) return [];
   
@@ -174,7 +172,6 @@ const getMarcatoriCasa = (partita) => {
   }).sort((a, b) => Number(a.minuto) - Number(b.minuto));
 };
 
-// --- LOGICA DI ASSEGNAZIONE GOL (TRASFERTA) ---
 const getMarcatoriTrasferta = (partita) => {
   if (!partita || !partita.squadra_casa || !partita.squadra_trasferta) return [];
   
@@ -307,7 +304,6 @@ onMounted(() => {
   fetchDettagli()
   checkSession()
 })
-
 </script>
 
 <template>
@@ -322,10 +318,8 @@ onMounted(() => {
         <img :src="competizione.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid" style="max-height: 100px; width: auto; object-fit: contain;">
         <div class="w-100 text-center text-md-start my-3">
           <h1 class="fw-bold mb-1 d-flex align-items-center justify-content-center justify-content-md-start">
-            <!-- Il testo viene spaziato con me-3 (margin-end) -->
             <span class="me-3">{{ competizione.nome }}</span>
             
-            <!-- L'icona diventa l'elemento cliccabile diretto -->
             <span
                 class="fs-3 user-select-none"
                 :class="isPreferita ?  'text-warning' : 'text-secondary'"  
@@ -448,7 +442,6 @@ onMounted(() => {
           </div>
         </div>
         
-
         <div v-if="activeTab === 'risultati' || activeTab === 'calendario'">
           
           <div class="mb-4 bg-light p-3 rounded-4 shadow-sm border">

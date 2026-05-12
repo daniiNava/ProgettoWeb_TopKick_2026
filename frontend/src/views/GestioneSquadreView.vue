@@ -5,21 +5,17 @@ import { showToast } from '@/utils/toastStore';
 
 const route = useRoute()
 const router = useRouter()
-const idCompetizione = route.params.id      // Viene preso l'ID dall'url
+const idCompetizione = route.params.id 
 
 const competizione = ref(null)
 const squadre = ref([])
 const caricamento = ref(true)
 const errorMessage = ref('')
 
-// Variabili per il form
 const nuovoNome = ref('')
 const nuovoLogoFile = ref(null)
-
-// Reference nativa di Vue per l'elemento di input del file (immagine logo competizione) (che sostituisce document.getElementById)
 const fileInputRef = ref(null)
 
-// Funzione per prendere il file quando l'utente Premium lo seleziona
 const handleFileChange = (event) => {
     nuovoLogoFile.value = event.target.files[0]
 }
@@ -39,78 +35,67 @@ const fetchDati = async () => {
             squadre.value = data.squadre
         }
     } catch (error){
-        console.error("Errore:", error)
+        console.error("Errore fetch squadre:", error)
     } finally {
         caricamento.value = false
     }
 }
 
-// 2. Creazione e aggiunta di una nuova squadra
 const aggiungiSquadra = async () => {
     try {
-        // Creazione di un oggetto FormData (per l'invio di file binari)
         const formData = new FormData()
         formData.append('nome', nuovoNome.value)
 
-        // Se l'utente ha selezionato un file, lo aggiungiamo col nome 'logo' (lo stesso che aspetta multer)
         if(nuovoLogoFile.value){
             formData.append('logo', nuovoLogoFile.value)
         }
 
         const response = await fetch(`/api/mie-competizioni/${idCompetizione}/squadre`, {
             method: 'POST', 
-            // Non serve il codice seguente: headers: { 'Content-Type': 'application/json' }, perchè lo fa il browser da solo per i FormData
-            body: formData
+            body: formData 
         })
 
         const data = await response.json()
 
         if(response.ok){
-            // Aggiunta della nuova competizione in cima alla lista senza dover ricaricare la pagina
             squadre.value.unshift(data.squadra)
             
-            // Pulizia della form
             nuovoNome.value = ''
             nuovoLogoFile.value = null
-            
-            // Reset fisico dell'input file html (tramite virtual DOM)
-            // Si evita di usare: document.getElementById('fileInputLogo').value = ''
             if(fileInputRef.value) fileInputRef.value.value = ''
 
-            errorMessage.value=''
+            errorMessage.value = ''
+            showToast("Squadra aggiunta!", "success")
         } else {
             errorMessage.value = data.error
         }
 
     } catch (error){
-        errorMessage.value = "Errore di connessione" 
+        errorMessage.value = "Errore di connessione al server" 
     }
 }
 
-// 3. Elimina Squadra
 const eliminaSquadra = async (id) => {
     if(!confirm("Sei sicuro di voler eliminare questa squadra?")) return;
     
     try {
-        const response = await fetch(`/api/mie-competizioni/${id}`, { method: 'DELETE' })
+        // Chiamata corretta all'API delle squadre
+        const response = await fetch(`/api/squadre/${id}`, { method: 'DELETE' })
 
         if(response.ok){
-            // Rimozione dell'elemento dall'array reattivo
             squadre.value = squadre.value.filter(c => c.id !== id)
+            showToast("Squadra eliminata", "info")
         } else {
             showToast("Errore durante l'eliminazione", 'danger');
         }
     } catch (error){
-        console.error("Errore: ", error)
+        console.error("Errore eliminazione squadra: ", error)
     }
 }
 
-// Inizializzazione automatica al rendering del componente
 onMounted(() => {
     fetchDati()
 })
-
-
 </script>
 
 
@@ -122,7 +107,6 @@ onMounted(() => {
         </div>
 
         <div v-else-if="competizione">
-            <!--INTESTAZIONE-->
             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-primary">
                 <div>
                     <RouterLink to="/mie-competizioni" class="btn btn-sm btn-outline-secondary mb-2">⬅ Torna indietro</RouterLink>
@@ -134,7 +118,6 @@ onMounted(() => {
             </div>
 
             <div class="row g-4">
-                <!--FORM aggiunta squadra-->
                 <div class="col-lg-4">
                     <div class="card shadow-sm border-primary">
                         <div class="card-header bg-primary text-white fw-bold">
@@ -142,7 +125,7 @@ onMounted(() => {
                         </div>
                         <div class="card-body">
                             <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
-                            <!--Disattivazione del form se è stato raggiunto il limite superiore di squadre-->
+                            
                             <div v-if="squadre.length >= competizione.numero_squadre" class="alert alert-warning">
                                 Hai raggiunto il limite di squadre che si possono aggiungere a questa competizione.
                             </div>
@@ -165,7 +148,6 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <!--LISTA SQUADRE-->
                 <div class="col-lg-8">
                     <div v-if="squadre.length === 0" class="alert alert-info text-center">
                         Nessuna squadra iscritta a questa competizione. Aggiungi la prima!
