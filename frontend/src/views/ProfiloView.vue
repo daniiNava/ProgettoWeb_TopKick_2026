@@ -1,12 +1,13 @@
 <script setup>
 import { showToast } from '@/utils/toastStore';
-import {ref, onMounted} from 'vue' //importiamo le Composition API fondamentali di Vue, ref serve per creare variabile reattive (ovvero che se vengono modificate viene modificata l'interfaccia) e onMounted è l hook del ciclo di vito
-import { useRouter } from 'vue-router'; // Per reinderizzare l'utente
+import { ref, onMounted } from 'vue' 
+import { useRouter } from 'vue-router'; 
 
 const router = useRouter()
 const utente = ref(null)
 const caricamento = ref(true)
 
+// Recupero i dati dell'utente loggato
 const fetchProfilo = async () => {
     try {
         const response = await fetch('/api/me')
@@ -14,7 +15,7 @@ const fetchProfilo = async () => {
         if(response.ok){
             utente.value = await response.json()
         } else {
-            // Se NON LOGGATO: Errore 401, reindirizzamento alla Homepage
+            // Se il server risponde 401, la sessione è scaduta o inesistente
             showToast("Devi effettuare l'accesso per vedere questa pagina.", 'danger')
             router.push('/')
         }
@@ -29,7 +30,6 @@ const fetchProfilo = async () => {
 onMounted(() => {
     fetchProfilo()
 })
-
 </script>
 
 <template>
@@ -39,7 +39,7 @@ onMounted(() => {
 
                 <div v-if="caricamento" class="text-center">
                     <div class="spinner-border text-success" role="status"></div>
-                        <p class="mt-2">Caricamento profilo...</p>
+                    <p class="mt-2">Caricamento profilo...</p>
                 </div>
 
                 <div v-else-if="utente" class="card shadow border-0 rounded-4">
@@ -66,7 +66,7 @@ onMounted(() => {
 
                         <hr class="my-4">
 
-                        <!--Sezione per effettuare UPGRADE (Visibile sono agli utenti base)-->
+                        <!-- Sezione Upgrade (solo per utenti base) -->
                         <div v-if="utente.ruolo === 'base'" class="text-center bg-light p-4 rounded-3 border border-warning">
                             <h4 class="text-warning fw-bold">Passa a Premium! ⭐</h4>
                             <p>Diventa un utente premium: Potrai creare le tue competizioni e aggiungere le tue squadre personalizzate.</p>
@@ -74,6 +74,7 @@ onMounted(() => {
                             <p class="text-muted mt-2 small">(Funzionalità in arrivo...)</p>
                         </div>
 
+                        <!-- Sezione Gestione (solo per utenti premium) -->
                         <div v-if="utente.ruolo === 'premium'" class="text-center bg-light p-4 rounded-3 border border-success">
                             <h4 class="text-success fw-bold">Area Gestione</h4>
                             <p>Sei un Utente Premium! Hai accesso all'area di gestione delle tue competizioni.</p>

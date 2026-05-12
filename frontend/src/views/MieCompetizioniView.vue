@@ -1,7 +1,7 @@
 <script setup>
 import { showToast } from '@/utils/toastStore'
-import {ref, onMounted} from 'vue'
-import {useRouter} from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const competizioni = ref([])
@@ -13,15 +13,13 @@ const nuovoNome = ref('')
 const nuovoLogoFile = ref(null)
 const nuovoNumeroSquadre = ref(20)
 
-// Reference nativa di Vue per l'elemento di input del file (immagine logo competizione) (che sostituisce document.getElementById)
+// Ref per resettare l'input file dopo l'upload
 const fileInputRef = ref(null)
 
-// Funzione per prendere il file quando l'utente Premium lo seleziona
 const handleFileChange = (event) => {
     nuovoLogoFile.value = event.target.files[0]
 }
 
-// 1. Caricamento delle competizioni dell'utente premium
 const fetchMieCompetizioni = async () => {
     try {
         const response = await fetch('/api/mie-competizioni')
@@ -34,79 +32,73 @@ const fetchMieCompetizioni = async () => {
             competizioni.value = await response.json()
         }
     } catch (error){
-        console.error("Errore:", error)
+        console.error("Errore fetch competizioni:", error)
     } finally {
         caricamento.value = false
     }
 }
 
-// 2. Creazione di una nuova competizione (Con Form-Data per far scegliere all'utente un file scaricato nel dispositivo)
 const creaCompetizione = async () => {
     try {
-        // Creazione di un oggetto FormData (per l'invio di file binari)
+        // Usiamo FormData perché dobbiamo inviare un file binario (il logo)
         const formData = new FormData()
         formData.append('nome', nuovoNome.value)
         formData.append('numero_squadre', nuovoNumeroSquadre.value)
 
-        // Se l'utente ha selezionato un file, lo aggiungiamo col nome 'logo' (lo stesso che aspetta multer)
         if(nuovoLogoFile.value){
             formData.append('logo', nuovoLogoFile.value)
         }
 
         const response = await fetch('/api/mie-competizioni', {
             method: 'POST', 
-            // Non serve il codice seguente: headers: { 'Content-Type': 'application/json' }, perchè lo fa il browser da solo per i FormData
             body: formData
         })
 
         const data = await response.json()
 
         if(response.ok){
-            // Aggiunta della nuova competizione in cima alla lista senza dover ricaricare la pagina
+            // Aggiungo la nuova competizione in cima alla lista (reattività di Vue)
             competizioni.value.unshift(data.competizione)
             
-            // Pulizia della form
+            // Reset form
             nuovoNome.value = ''
             nuovoLogoFile.value = null
             nuovoNumeroSquadre.value = 20
             
-            // Reset fisico dell'input file html (tramite virtual DOM)
-            // Si evita di usare: document.getElementById('fileInputLogo').value = ''
+            // Svuoto fisicamente l'input file
             if(fileInputRef.value) fileInputRef.value.value = ''
 
-            errorMessage.value=''
+            errorMessage.value = ''
+            showToast("Competizione creata con successo!", "success")
         } else {
-            errorMessage.value = data.error     // Errore se viene superato il numero di squadre
+            errorMessage.value = data.error 
         }
 
     } catch (error){
-        errorMessage.value = "Errore di connessione" 
+        errorMessage.value = "Errore di connessione al server" 
     }
 }
 
-// 3. Elimina competizione
 const eliminaCompetizione = async (id) => {
-    if(!confirm("Sei sicuro di voler eliminare questa tua competizione? Verranno eliminati anche tutti i suoi dati associati (squadre, partite, ...)")) return;
+    if(!confirm("Sei sicuro? Verranno eliminate a cascata anche tutte le squadre e le partite associate!")) return;
     
     try {
         const response = await fetch(`/api/mie-competizioni/${id}`, { method: 'DELETE' })
 
         if(response.ok){
-            // Rimozione dell'elemento dall'array reattivo
             competizioni.value = competizioni.value.filter(c => c.id !== id)
+            showToast("Competizione eliminata", "info")
         } else {
             showToast("Errore durante l'eliminazione", 'danger')
         }
     } catch (error){
-        console.error("Errore: ", error)
+        console.error("Errore eliminazione: ", error)
     }
 }
 
-// Inizializzazione automatica al rendering del componente
 onMounted(() => {
     fetchMieCompetizioni()
 })
-
 </script>
 
 
@@ -127,7 +119,7 @@ onMounted(() => {
                     <div class="card-body">
                         <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
-                        <form @submit.prevent="creaCompetizione" enctype="multipart/form-data"> <!--In questo modo viene usato form-data-->
+                        <form @submit.prevent="creaCompetizione" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nome Competizione *</label>
                                 <input type="text" class="form-control" v-model="nuovoNome" required placeholder="Es. Torneo della Sapienza">
@@ -160,7 +152,6 @@ onMounted(() => {
                 </div>
 
                 <div v-else class="row g-3">
-                    <!-- Card per ogni competizione-->
                     <div v-for="comp in competizioni" :key="comp.id" class="col-md-6">
                         <div class="card h-100 shadow-sm border-0 bg-light">
                             <div class="card-body d-flex flex-column">

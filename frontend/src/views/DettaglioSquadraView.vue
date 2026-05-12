@@ -5,7 +5,7 @@ import { showToast } from '@/utils/toastStore'
 
 const route = useRoute()
 
-// ID reattivo. Così se passiamo da una squadra all'altra, la pagina si aggiorna!
+// ID reattivo: se l'utente clicca su un'altra squadra dalla classifica, la pagina si aggiorna senza ricaricare
 const idSquadra = computed(() => parseInt(route.params.id))
 
 // --- VARIABILI DI STATO ---
@@ -19,15 +19,15 @@ const caricamento = ref(true)
 const errore = ref(null) 
 const activeTab = ref('riepilogo')
 
-// Variabili preferiti e sessione 
+// Gestione utente e preferiti
 const utenteLoggato = ref(null)
 const isPreferita = ref(false)
 
-// Variabili per l'Annata
+// Filtri annata
 const annataSelezionata = ref('25/26')
 const annateDisponibili = ref(['25/26'])
 
-// Variabili per l'UI
+// UI Calendario e Risultati
 const partiteEspanse = ref([])
 const mostraTuttiRisultati = ref(false)
 const mostraTuttoCalendario = ref(false)
@@ -39,7 +39,7 @@ const pluraleRuolo = {
   'Attaccante': 'Attaccanti'
 }
 
-// --- FETCH DEI DATI ---
+// Recupero tutti i dati della squadra
 const fetchDettagli = async () => {
   caricamento.value = true
   errore.value = null
@@ -58,6 +58,7 @@ const fetchDettagli = async () => {
         annateDisponibili.value = data.annate_disponibili
       }
       
+      // Se l'annata selezionata non esiste per questa squadra, prendiamo la prima disponibile
       if (!annateDisponibili.value.includes(annataSelezionata.value) && annateDisponibili.value.length > 0) {
         annataSelezionata.value = annateDisponibili.value[0]
       }
@@ -65,7 +66,7 @@ const fetchDettagli = async () => {
       errore.value = `Errore dal server: ${response.status} ${response.statusText}`
     }
   } catch (err) {
-    console.error("Errore:", err)
+    console.error("Errore fetch dettagli squadra:", err)
     errore.value = "Impossibile connettersi al server."
   } finally {
     caricamento.value = false
@@ -78,7 +79,7 @@ const checkSession = async () => {
     const response = await fetch('/api/me')
     if (response.ok) {
       utenteLoggato.value = await response.json()
-      await checkSePreferito()  // Se è loggato, controlla se è nei preferiti
+      await checkSePreferito() 
     } else {
       utenteLoggato.value = null
       isPreferita.value = false
@@ -93,9 +94,8 @@ const checkSePreferito = async () => {
     const response = await fetch('/api/preferiti')
     if (response.ok) {
       const data = await response.json()
-
-      // Controllo se l'ID di questa competizione è nell'array dei preferiti
-      isPreferita.value = data.squadre.some(s => s.id === idSquadra.value)    // "qui uso il '.value' perchè in questa pagina idSquadra è una variabile computed (reattiva)"
+      // Uso idSquadra.value perché è una variabile computed
+      isPreferita.value = data.squadre.some(s => s.id === idSquadra.value)    
     }
   } catch (error) {
     console.error("Errore controllo preferiti: ", error)
@@ -108,15 +108,13 @@ const togglePreferito = async () => {
     return
   }
   try {
-    if (isPreferita.value){   // Se la stellina è piena, significa che se viene premuta è per levare tra i preferiti la competizione
-      // Rimuovi dai preferiti
+    if (isPreferita.value){   
       const response = await fetch(`/api/preferiti/squadre/${idSquadra.value}`, { method: 'DELETE' })
       if(response.ok){
         isPreferita.value = false
         showToast("Squadra rimossa dai preferiti", "info")
       }
     } else {
-      // Aggiunta ai preferiti
       const response = await fetch(`/api/preferiti/squadre`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,13 +125,12 @@ const togglePreferito = async () => {
         showToast("Squadra aggiunta ai preferiti!", "success")
       }
     }
-
   } catch (error) {
     console.error("Errore di connessione: ", error)
   }
 }
 
-// Se l'utente cambia annata dal menu a tendina
+// Watchers per aggiornare i dati quando l'utente interagisce
 watch(annataSelezionata, (newVal, oldVal) => {
   if (newVal !== oldVal) {
     partiteEspanse.value = [] 
@@ -143,15 +140,14 @@ watch(annataSelezionata, (newVal, oldVal) => {
   }
 })
 
-// Se l'utente clicca su un'altra squadra (l'URL cambia)
 watch(idSquadra, () => {
-  activeTab.value = 'riepilogo' // Resetta la tab
+  activeTab.value = 'riepilogo' 
   isPreferita.value = false 
   fetchDettagli()
-  checkSession()    // Ricontrolla i preferiti per la nuova squadra
+  checkSession()    
 })
 
-// --- COMPUTED PROPERTIES ---
+// --- RAGGRUPPAMENTO DATI ---
 const giocatoriPerRuolo = computed(() => {
   const gruppi = { 'Portiere': [], 'Difensore': [], 'Centrocampista': [], 'Attaccante': [] }
   giocatori.value.forEach(g => {
@@ -160,14 +156,12 @@ const giocatoriPerRuolo = computed(() => {
   return gruppi
 })
 
-// Partite
 const partiteGiocate = computed(() => partite.value.filter(p => p.stato === 'finita'))
 const partiteDaGiocare = computed(() => partite.value.filter(p => p.stato !== 'finita').reverse())
 
-// Computed per limitare la visualizzazione a 5 elementi
+// Paginazione fittizia per non allungare troppo la pagina
 const partiteGiocateVisibili = computed(() => mostraTuttiRisultati.value ? partiteGiocate.value : partiteGiocate.value.slice(0, 5))
 const partiteDaGiocareVisibili = computed(() => mostraTuttoCalendario.value ? partiteDaGiocare.value : partiteDaGiocare.value.slice(0, 5))
-
 const prossimePartite = computed(() => partiteDaGiocare.value.slice(0, 3))
 
 // --- ALGORITMO CLASSIFICA ---
@@ -216,7 +210,7 @@ const classificaCalcolata = computed(() => {
   })
 })
 
-// --- FUNZIONI DI SUPPORTO PER I GOL E L'UI ---
+// --- FUNZIONI UI PER I TABELLINI ---
 const toggleDettagliPartita = (partitaId) => {
   const index = partiteEspanse.value.indexOf(partitaId);
   if (index === -1) partiteEspanse.value.push(partitaId);
@@ -295,10 +289,8 @@ onMounted(() => {
         <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid rounded" style="width: 100px; height: 100px; object-fit: contain;">
         <div class="w-100 text-center text-md-start my-3">
             <h1 class="fw-bold mb-1 d-md-flex align-items-center text-center justify-content-center justify-content-md-start">
-              <!-- Il testo viene spaziato con me-3 (margin-end) -->
               <span class="me-3">{{ squadra.nome }}</span>
               
-              <!-- L'icona diventa l'elemento cliccabile diretto -->
               <span
                 class="fs-3 user-select-none" 
                 :class="isPreferita ?  'text-warning' : 'text-secondary'" 
@@ -567,25 +559,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Tab Attiva in Verde */
+/* Stili per i Tab */
 .nav-tabs .nav-link { border: none; color: #6c757d; }
 .nav-tabs .nav-link.active { border-bottom: 3px solid #198754 !important; color: #198754 !important; background-color: transparent; }
 .nav-tabs .nav-link:hover:not(.active) { border-bottom: 3px solid #dee2e6; }
 .nav-tabs::-webkit-scrollbar { display: none; }
 
+/* Stili per i Badge Posizione */
 .pos-badge { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
 .badge-champions { background-color: #004684; color: white; }
 .badge-europa { background-color: #8b0021; color: white; }
 .badge-conference { background-color: #b8860b; color: white; }
 .badge-default { background-color: transparent; color: #495057; }
 
+/* Stili per i Quadratini della Forma (V, N, P) */
 .forma-box { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-size: 0.75rem; color: white; }
 .forma-v { background-color: #198754; } 
 .forma-n { background-color: #ffc107; color: black; } 
 .forma-p { background-color: #dc3545; } 
 .forma-empty { background-color: #e9ecef; color: #adb5bd; } 
 
-/* Hover Link in Verde */
 .custom-link { transition: color 0.2s ease-in-out; }
 .custom-link:hover { color: #198754 !important; }
 
@@ -600,6 +593,5 @@ onMounted(() => {
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Stile per gestire la transizione di colore della stella */
 .transition-all { transition: all 0.2s ease-in-out; }
 </style>
