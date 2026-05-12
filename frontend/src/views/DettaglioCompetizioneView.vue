@@ -52,6 +52,9 @@ const checkSession = async () => {
     if (response.ok) {
       utenteLoggato.value = await response.json()
       await checkSePreferito()  // Se è loggato, controlla se è nei preferiti
+    } else {
+      utenteLoggato.value = null
+      isPreferito.value = false
     }
   } catch (error) {
     console.error("Errore sessione: ", error)
@@ -323,13 +326,14 @@ onMounted(() => {
             <span class="me-3">{{ competizione.nome }}</span>
             
             <!-- L'icona diventa l'elemento cliccabile diretto -->
-            <i 
-              class="bi fs-3" 
-              :class="isPreferito ? 'bi-star-fill text-warning' : 'bi-star text-secondary'" 
-              style="cursor: pointer; transition: transform 0.2s;" 
-              @click="togglePreferito"
-              :title="isPreferito ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
-            ></i>
+            <span
+                class="fs-3 user-select-none text-warning" 
+                style="cursor: pointer; transition: transform 0.2s; display: inline-block;" 
+                @click="togglePreferito"
+                :title="isPreferito ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
+              >
+              {{ isPreferito ? '★' : '☆' }}
+          </span>
           </h1>
           <p class="text-muted mb-0 fs-5">{{ competizione.nazione || 'Internazionale' }}</p>
         </div>

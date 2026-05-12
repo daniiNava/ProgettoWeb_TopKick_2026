@@ -299,13 +299,15 @@ onMounted(() => {
               <span class="me-3">{{ squadra.nome }}</span>
               
               <!-- L'icona diventa l'elemento cliccabile diretto -->
-              <i 
-                class="bi fs-3" 
-                :class="isPreferita ? 'bi-star-fill text-warning' : 'bi-star text-secondary'" 
-                style="cursor: pointer; transition: transform 0.2s;" 
+              <span
+                class="fs-3 user-select-none" 
+                :class="isPreferita ?  'text-warning' : 'text-secondary'" 
+                style="cursor: pointer; transition: transform 0.2s; display: inline-block;" 
                 @click="togglePreferito"
                 :title="isPreferita ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
-              ></i>
+              >
+              {{ isPreferita ? '★' : '☆' }}
+              </span>
             </h1>
             
             <p class="text-muted mb-0 fs-5">
