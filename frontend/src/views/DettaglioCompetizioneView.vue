@@ -479,7 +479,7 @@ onMounted(() => {
 
                     <div class="px-2 text-center punteggio-box p-2 rounded-3" @click="toggleDettagliPartita(partita.id)">
                       <template v-if="partita.stato === 'finita'">
-                        <div class="fw-black fs-4 text-dark lh-1 mb-1">{{ partita.gol_casa }} - {{ partita.gol_trasferta }}</div>
+                        <div class="fw-black fs-4 text-dark lh-1 mb-1">{{getMarcatoriCasa(partita).length}} - {{ getMarcatoriTrasferta(partita).length }}</div>
                         <div class="d-flex align-items-center justify-content-center gap-1 text-secondary" style="font-size: 0.65rem;">
                           <span>FINALE</span>
                           <span class="freccia-dettagli" :class="{'ruotata': partiteEspanse.includes(partita.id)}">▼</span>
@@ -553,7 +553,14 @@ onMounted(() => {
               <tbody>
                 <tr v-for="(g, index) in classificaMarcatori" :key="index">
                   <td>{{ index + 1 }}</td>
-                  <td class="fw-bold">{{ g.nome }}</td>
+                  <td class="fw-bold">
+                    <RouterLink
+                        :key="g.nome" 
+                        :to="`/giocatori/${g.nome}`" 
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-decoration-none"
+                    >{{ g.nome }}
+                    </RouterLink>
+                  </td>
                   <td class="text-muted small">{{ g.squadra }}</td>
                   <td class="text-center fw-bold fs-5">{{ g.gol }}</td>
                 </tr>
@@ -576,7 +583,14 @@ onMounted(() => {
               <tbody>
                 <tr v-for="(g, index) in classificaAssist" :key="index">
                   <td>{{ index + 1 }}</td>
-                  <td class="fw-bold">{{ g.nome }}</td>
+                  <td class="fw-bold">
+                    <RouterLink
+                        :key="g.nome" 
+                        :to="`/giocatori/${g.nome}`" 
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center text-decoration-none"
+                    >{{ g.nome }}
+                    </RouterLink>
+                  </td>
                   <td class="text-muted small">{{ g.squadra }}</td>
                   <td class="text-center fw-bold fs-5">{{ g.assist }}</td>
                 </tr>
