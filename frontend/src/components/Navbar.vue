@@ -1,16 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Modal } from 'bootstrap'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from '@/utils/toastStore'
+// ATTENZIONE: Abbiamo rimosso import { Modal } from 'bootstrap' perché ora gestiamo tutto con Vue!
 
 const router = useRouter()
 
 // Variabili di stato globale e UI
 const utenteLoggato = ref(null)  
 const isLoginMode = ref(true)       // true = Login, false = Registrazione
-const isDropdownOpen = ref(false)   // Gestione manuale tendina profilo
-const errorMessage = ref('')
 
 // Variabili reattive per i form di Auth
 const loginEmail = ref('')
@@ -18,6 +16,11 @@ const loginPassword = ref('')
 const regUsername = ref('')
 const regEmail = ref('')
 const regPassword = ref('')
+
+// Variabili per il popup e la corretta pulizia dopo l'accesso
+const isDropdownOpen = ref(false)   // Gestione manuale tendina profilo
+const errorMessage = ref('')
+const showAuthModal = ref(false)    // Gestione esclusiva Vue per il modale
 
 // Variabili per la barra di ricerca intelligente
 const testoRicerca = ref('')
@@ -41,21 +44,17 @@ const checkSession = async () => {
     }
 }
 
+// Funzione di supporto: apre la modale tramite Vue
+const apriPopup = (mode) => {
+    isLoginMode.value = mode; // true = Login, false = Registrazione
+    showAuthModal.value = true;
+}
+
 // Funzione di supporto: chiude la modale di Bootstrap e pulisce il DOM
 const chiudiPopup = () => {
-    const modalElement = document.getElementById('authModal')
-    if(modalElement){
-        const modalInstance = Modal.getInstance(modalElement)
-        if(modalInstance) modalInstance.hide()
-    }
-    
-    // Hack necessario perché Vue e Bootstrap a volte litigano sul DOM:
-    // Rimuoviamo a mano gli sfondi scuri rimasti appesi e sblocchiamo lo scroll
-    document.body.classList.remove('modal-open')
-    document.body.style.overflow = ''
-    document.body.style.paddingRight = ''
-    const backdrops = document.querySelectorAll('.modal-backdrop')
-    backdrops.forEach(backdrop => backdrop.remove())
+    // Gestione puramente reattiva: basta impostare la variabile a false
+    showAuthModal.value = false;
+    errorMessage.value = ''; // Pulisce eventuali errori precedenti
 }
 
 // 2. Esegue il Login
@@ -122,7 +121,12 @@ const handleLogout = async () => {
         isDropdownOpen.value = false // Chiude la tendina
         
         // Se l'utente era in una pagina protetta, lo rimandiamo alla home
-        if(router.currentRoute.value.path.includes('mie-competizioni') || router.currentRoute.value.path.includes('preferiti')) {
+        const pathCorrente = router.currentRoute.value.path;
+        if(
+            pathCorrente.includes('mie-competizioni') || 
+            pathCorrente.includes('preferiti') ||
+            pathCorrente.includes('profilo')
+        ) {
             router.push('/')
         }
 
@@ -179,10 +183,28 @@ const selezionaSuggerimento = (testo) => {
   eseguiRicerca()
 }
 
+// Handler per processare l'evento globale
+const gestisciAggiornamentoSessione = (event) => {
+    // Verifica l'esistenza dell'oggetto utente e del payload
+    if (utenteLoggato.value && event.detail && event.detail.nuovoRuolo) {
+        // Aggiornamento reattivo e sincrono: la stellina appare immediatamente (0 delay)
+        utenteLoggato.value.ruolo = event.detail.nuovoRuolo;
+    } else {
+        // Fallback: se mancano i dati, si forza un ricaricamento bypassando la cache
+        checkSession(); 
+    }
+};
+
 // --- CICLO DI VITA ---
 onMounted(() => {
     checkSession() // Controlla chi è loggato appena si carica il sito
+    window.addEventListener('session-updated', gestisciAggiornamentoSessione)
 })
+
+onUnmounted(() => {
+    // Rimozione dei listener globali alla distruzione del nodo
+    window.removeEventListener('session-updated', gestisciAggiornamentoSessione);
+});
 </script>
 
 <template>
@@ -314,10 +336,11 @@ onMounted(() => {
                                 
                                 <!-- UTENTE NON LOGGATO -->
                                 <div v-if="!utenteLoggato" class="d-flex flex-column flex-lg-row gap-2 w-100">
-                                    <button class="btn btn-outline-light fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = true" data-bs-dismiss="offcanvas">
+                                    <!-- rimosso data-bs-toggle e target, usiamo solo @click di Vue -->
+                                    <button class="btn btn-outline-light fw-bold px-4 text-nowrap" @click="apriPopup(true)" data-bs-dismiss="offcanvas">
                                         Accedi
                                     </button>
-                                    <button class="btn btn-success fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#authModal" @click="isLoginMode = false" data-bs-dismiss="offcanvas">
+                                    <button class="btn btn-success fw-bold px-4 text-nowrap" @click="apriPopup(false)" data-bs-dismiss="offcanvas">
                                         Iscriviti
                                     </button>
                                 </div>
@@ -377,72 +400,78 @@ onMounted(() => {
         </div>
     </nav>
 
-    <!-- MODALE LOGIN / REGISTRAZIONE -->
-    <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> 
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg border-0">
+    <!-- MODALE LOGIN / REGISTRAZIONE GESTITA CON VUE -->
+    <div v-if="showAuthModal">
+        <!-- Sfondo scuro e blur -->
+        <div class="modal-backdrop fade show" @click="chiudiPopup"></div>
+        
+        <!-- Finestra Modale visibile forzatamente -->
+        <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" style="z-index: 1055;"> 
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0">
 
-                <div class="modal-header text-white" :class="isLoginMode ? 'bg-success' : 'bg-primary'">
-                    <h5 class="modal-title fw-bold" id="authModalLabel">
-                        {{ isLoginMode ? 'Bentornato su TOPKICK' : 'Crea un nuovo account' }}       
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body p-4">
-
-                    <!-- Alert per gli errori -->
-                    <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert"> 
-                        <strong>Attenzione!</strong> {{ errorMessage }}
-                        <button type="button" class="btn-close" @click="errorMessage = ''" aria-label="Close"></button>
+                    <div class="modal-header text-white" :class="isLoginMode ? 'bg-success' : 'bg-primary'">
+                        <h5 class="modal-title fw-bold">
+                            {{ isLoginMode ? 'Bentornato su TOPKICK' : 'Crea un nuovo account' }}       
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @click="chiudiPopup" aria-label="Close"></button>
                     </div>
 
-                    <!-- Form Login -->
-                    <form v-if="isLoginMode" @submit.prevent="handleLogin">  
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Email</label>
-                            <input type="email" class="form-control" v-model="loginEmail" required> 
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Password</label>
-                            <input type="password" class="form-control" v-model="loginPassword" required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold">Accedi</button>
-                    </form>
+                    <div class="modal-body p-4">
 
-                    <!-- Form Registrazione -->
-                    <form v-else @submit.prevent="handleRegister">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Username</label>
-                            <input type="text" class="form-control" v-model="regUsername" required>
+                        <!-- Alert per gli errori -->
+                        <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert"> 
+                            <strong>Attenzione!</strong> {{ errorMessage }}
+                            <button type="button" class="btn-close" @click="errorMessage = ''" aria-label="Close"></button>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Email</label>
-                            <input type="email" class="form-control" v-model="regEmail" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Password (min. 8 caratteri)</label>
-                            <input type="password" class="form-control" v-model="regPassword" minlength="8" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">Registrati</button>
-                    </form>
 
+                        <!-- Form Login -->
+                        <form v-if="isLoginMode" @submit.prevent="handleLogin">  
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" class="form-control" v-model="loginEmail" required> 
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Password</label>
+                                <input type="password" class="form-control" v-model="loginPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold">Accedi</button>
+                        </form>
+
+                        <!-- Form Registrazione -->
+                        <form v-else @submit.prevent="handleRegister">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Username</label>
+                                <input type="text" class="form-control" v-model="regUsername" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input type="email" class="form-control" v-model="regEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Password (min. 8 caratteri)</label>
+                                <input type="password" class="form-control" v-model="regPassword" minlength="8" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">Registrati</button>
+                        </form>
+
+                    </div>
+
+                    <div class="modal-footer justify-content-center bg-light">
+                        <p class="mb-0" v-if="isLoginMode">
+                            Non hai un account?
+                            <a href="#" class="text-primary fw-bold text-decoration-none" @click.prevent="isLoginMode = false"> 
+                                Registrati ora
+                            </a>
+                        </p>
+                        <p class="mb-0" v-else>
+                            Hai già un account?
+                            <a href="#" class="text-primary fw-bold text-decoration-none" @click.prevent="isLoginMode = true"> 
+                                Accedi
+                            </a>
+                        </p>
+                    </div>
                 </div>
-
-                <div class="modal-footer justify-content-center bg-light">
-                    <p class="mb-0" v-if="isLoginMode">
-                        Non hai un account?
-                        <a href="#" class="text-primary fw-bold text-decoration-none" @click.prevent="isLoginMode = false"> 
-                            Registrati ora
-                        </a>
-                    </p>
-                    <p class="mb-0" v-else>
-                        Hai già un account?
-                        <a href="#" class="text-primary fw-bold text-decoration-none" @click.prevent="isLoginMode = true"> 
-                            Accedi
-                        </a>
-                    </p>
-                 </div>
             </div>
         </div>
     </div>
