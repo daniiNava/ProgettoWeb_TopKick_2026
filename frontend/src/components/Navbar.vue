@@ -476,3 +476,10 @@ onUnmounted(() => {
         </div>
     </div>
 </template>
+<style scoped>
+/* Regola per bloccare lo scroll del body solo quando la modale Vue è visibile.
+    Usiamo il selettore globale :global() per colpire il body dall'interno di uno style scoped */
+:global(body:has(.modal.show.d-block)) {
+    overflow: hidden;
+}
+</style>
