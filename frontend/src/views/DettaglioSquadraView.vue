@@ -559,39 +559,5 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Stili per i Tab */
-.nav-tabs .nav-link { border: none; color: #6c757d; }
-.nav-tabs .nav-link.active { border-bottom: 3px solid #198754 !important; color: #198754 !important; background-color: transparent; }
-.nav-tabs .nav-link:hover:not(.active) { border-bottom: 3px solid #dee2e6; }
-.nav-tabs::-webkit-scrollbar { display: none; }
 
-/* Stili per i Badge Posizione */
-.pos-badge { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
-.badge-champions { background-color: #004684; color: white; }
-.badge-europa { background-color: #8b0021; color: white; }
-.badge-conference { background-color: #b8860b; color: white; }
-.badge-default { background-color: transparent; color: #495057; }
-
-/* Stili per i Quadratini della Forma (V, N, P) */
-.forma-box { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; font-size: 0.75rem; color: white; }
-.forma-v { background-color: #198754; } 
-.forma-n { background-color: #ffc107; color: black; } 
-.forma-p { background-color: #dc3545; } 
-.forma-empty { background-color: #e9ecef; color: #adb5bd; } 
-
-.custom-link { transition: color 0.2s ease-in-out; }
-.custom-link:hover { color: #198754 !important; }
-
-/* --- STILI PER INTERATTIVITA' RISULTATI --- */
-.punteggio-box { cursor: pointer; user-select: none; background-color: #f8f9fa; border: 1px solid transparent; transition: all 0.2s ease-in-out; }
-.punteggio-box:hover { background-color: #e9ecef; border-color: #dee2e6; transform: scale(1.05); }
-.freccia-dettagli { display: inline-block; transition: transform 0.3s ease; font-size: 10px; }
-.freccia-dettagli.ruotata { transform: rotate(180deg); }
-.details-dropdown { animation: slideDown 0.3s ease-out forwards; transform-origin: top; }
-@keyframes slideDown { from { opacity: 0; transform: scaleY(0); } to { opacity: 1; transform: scaleY(1); } }
-
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.transition-all { transition: all 0.2s ease-in-out; }
 </style>

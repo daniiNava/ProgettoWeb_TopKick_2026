@@ -256,35 +256,7 @@ onMounted(() => fetchDatiGiocatore())
 </template>
 
 <style scoped>
-.max-w-custom { max-width: 900px; margin: 0 auto; }
-.bg-light-soft { background-color: #f1f3f4; min-height: 100vh; }
-
-.avatar-box { width: 120px; height: 120px; overflow: hidden; }
-.club-maxi-logo { width: 120px; height: 120px; }
-.match-logo { width: 20px; height: 20px; object-fit: contain; }
-
-.flashscore-tabs-container { overflow-x: auto; white-space: nowrap; }
 .nav-tabs .nav-link { color: #6c757d; border-bottom: 3px solid transparent !important; border-radius: 0; transition: all 0.2s ease; letter-spacing: 0.5px; }
 .nav-tabs .nav-link:hover { color: #212529 !important; }
 .nav-tabs .active-tab { border-bottom: 3px solid #198754 !important; }
-
-.custom-flash-table th { border-top: none; }
-.custom-flash-table td { vertical-align: middle; }
-.custom-flash-table tbody tr:hover { background-color: #f8f9fa; }
-
-/* Stile per la barra Mostra di Più */
-.show-more-bar { cursor: pointer; transition: background-color 0.2s; }
-.show-more-bar:hover { background-color: #e9ecef !important; }
-
-.fs-7 { font-size: 0.8rem; padding: 0.35em 0.55em; }
-.bg-warning { background-color: #f29c1f !important; color: white !important; }
-.bg-success { background-color: #00a651 !important; }
-.bg-danger { background-color: #e51c23 !important; }
-
-@media (max-width: 767.98px) {
-  .avatar-box { width: 100px; height: 100px; }
-  .custom-flash-table th.pe-5, .custom-flash-table td.pe-5 {
-    padding-right: 1.5rem !important; /* Riduce un po' lo spazio su mobile per non far sbordare tutto */
-  }
-}
 </style>

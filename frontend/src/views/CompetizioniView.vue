@@ -131,7 +131,7 @@ onMounted(() => fetchDati())
 
       <!-- Card Singola Competizione -->
       <div v-for="comp in competizioniFiltrate" :key="comp.id" class="col-lg-6">
-        <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden comp-card">
+        <div v-if="top6PerCompetizione[comp.id] && top6PerCompetizione[comp.id].length > 0" class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden comp-card">
           
           <!-- Accent Line superiore (Pattern Verde) -->
           <div class="bg-success" style="height: 4px;"></div>
@@ -149,11 +149,8 @@ onMounted(() => fetchDati())
 
           <!-- Body Card (Mini Classifica) -->
           <div class="card-body pt-0">
-            <div v-if="!top6PerCompetizione[comp.id] || top6PerCompetizione[comp.id].length === 0" class="text-muted text-center py-4 bg-light rounded-3">
-               Nessun dato disponibile per questa stagione.
-            </div>
             
-            <table v-else class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0">
               <thead>
                 <tr class="text-muted small uppercase">
                   <th style="width: 40px;">Pos</th>
@@ -187,36 +184,7 @@ onMounted(() => fetchDati())
     </div>
   </div>
 </template>
-
 <style scoped>
-/* Transizione card come nelle notizie */
-.comp-card {
-    transition: all 0.3s ease;
-}
-.comp-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.1) !important;
-}
-
-/* Badge posizioni circolari e moderni */
-.pos-badge {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-weight: bold;
-  font-size: 0.8rem;
-}
-
-.badge-champions { background-color: #004684; color: white; }
-.badge-europa { background-color: #de7000; color: white; }
-.badge-conference { background-color: #198754; color: white; }
-.badge-default { background-color: #f1f3f5; color: #495057; }
-
-.custom-link:hover { color: #198754 !important; }
-
 /* Stile tabella */
 .table thead th {
   font-size: 0.75rem;

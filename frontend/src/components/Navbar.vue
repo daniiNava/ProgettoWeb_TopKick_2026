@@ -447,14 +447,3 @@ onMounted(() => {
         </div>
     </div>
 </template>
-
-<style scoped>
-    /* Effetto vetro smerigliato per lo sfondo della modale */
-    :deep(.modal-backdrop) {
-        backdrop-filter: blur(5px);
-        background-color: rgba(0, 0, 0, 0.6);
-    }
-    :deep(.modal-backdrop.show) {
-        opacity: 1;
-    }
-</style>
