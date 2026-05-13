@@ -238,7 +238,7 @@ router.get('/squadre/:id/dettagli', async (req, res) => {
 
         const { data: partiteCompetizione } = await supabase.from('partite').select(`id_squadra_casa, id_squadra_trasferta, gol_casa, gol_trasferta, squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)`).eq('id_competizione', squadra.id_competizione).eq('stato', 'finita').eq('annata', annataRichiesta);
         const { data: notizie } = await supabase.from('notizie').select('*').eq('id_competizione', squadra.id_competizione).order('data_pubblicazione', { ascending: false }).limit(5);
-        const { data: annateData } = await supabase.from('partite').select('annata').eq('id_competizione', squadra.id_competizione);
+        const { data: annateData } = await supabase.from('giocatori').select('annata').eq('id_squadra', squadra.id);
         
         let annateDisponibili = annateData ? [...new Set(annateData.map(p => p.annata))].sort().reverse() : ['25/26'];
 

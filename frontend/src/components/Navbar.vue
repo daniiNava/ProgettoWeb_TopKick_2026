@@ -325,29 +325,46 @@ onMounted(() => {
                                 <!-- UTENTE LOGGATO -->
                                 <div v-else class="nav-item dropdown w-100">
                                     <button class="nav-link dropdown-toggle text-white border-0 bg-transparent d-flex align-items-center w-100" type="button" @click="toggleDropdown"> 
-                                        <span class="text-nowrap">👤 Ciao, {{ utenteLoggato.username }} <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">⭐</span></span>
+                                        <span class="text-nowrap"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-circle me-2 mb-1" viewBox="0 0 16 16">
+                                            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                            <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+                                        </svg> Ciao, {{ utenteLoggato.username }} 
+                                            <span v-if="utenteLoggato.ruolo === 'premium'" class="ms-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill text-warning me-2 mb-1" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                                </svg>
+                                            </span>
+                                        </span>
                                     </button>
 
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" :class="{ 'show': isDropdownOpen }" style="right: 0; left: auto; min-width: 200px;" data-bs-dismiss="offcanvas"> 
                                         <li>
                                             <RouterLink class="dropdown-item py-2" to="/profilo" @click="isDropdownOpen = false">
-                                                <i class="bi bi-person me-2"></i>Il mio Profilo
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person me-2 mb-1" viewBox="0 0 16 16">
+                                                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                                                </svg>Il mio Profilo
                                             </RouterLink>
                                         </li>
                                         <li>
                                             <RouterLink class="dropdown-item py-2" to="/preferiti" @click="isDropdownOpen = false">
-                                                <i class="bi bi-star-fill text-warning me-2"></i>I miei Preferiti
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star-fill me-2 mb-1" viewBox="0 0 16 16">
+                                                    <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                                </svg>I miei Preferiti
                                             </RouterLink>
                                         </li>
                                         <li v-if="utenteLoggato.ruolo === 'premium'">
                                             <RouterLink class="dropdown-item py-2" to="/mie-competizioni" @click="isDropdownOpen = false">
-                                                <i class="bi bi-trophy me-2"></i>Le mie Competizioni
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trophy me-2 mb-1" viewBox="0 0 16 16">
+                                                    <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5q0 .807-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33 33 0 0 1 2.5.5m.099 2.54a2 2 0 0 0 .72 3.935c-.333-1.05-.588-2.346-.72-3.935m10.083 3.935a2 2 0 0 0 .72-3.935c-.133 1.59-.388 2.885-.72 3.935M3.504 1q.01.775.056 1.469c.13 2.028.457 3.546.87 4.667C5.294 9.48 6.484 10 7 10a.5.5 0 0 1 .5.5v2.61a1 1 0 0 1-.757.97l-1.426.356a.5.5 0 0 0-.179.085L4.5 15h7l-.638-.479a.5.5 0 0 0-.18-.085l-1.425-.356a1 1 0 0 1-.757-.97V10.5A.5.5 0 0 1 9 10c.516 0 1.706-.52 2.57-2.864.413-1.12.74-2.64.87-4.667q.045-.694.056-1.469z"/>
+                                                </svg>Le mie Competizioni
                                             </RouterLink>
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
                                             <a class="dropdown-item text-danger py-2" href="#" @click.prevent="handleLogout">
-                                                <i class="bi bi-box-arrow-left me-2"></i>Esci
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-left me-2 mb-1" viewBox="0 0 16 16">
+                                                <path fill-rule="evenodd" d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0z"/>
+                                                <path fill-rule="evenodd" d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H10.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708z"/>
+                                                </svg>Esci
                                             </a>
                                         </li>
                                     </ul>

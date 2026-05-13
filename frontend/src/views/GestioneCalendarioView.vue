@@ -260,16 +260,26 @@ onMounted(() => {
         </div>
 
         <div v-else-if="competizione">
-            <div class="mb-4 border-bottom pb-2 border-warning">
-                <RouterLink to="/mie-competizioni" class="btn btn-sm btn-outline-secondary mb-2">⬅ Torna alle Competizioni</RouterLink>
-                <h1 class="fw-bold text-warning">📅 Calendario: {{ competizione.nome }}</h1>
+            <div class="mb-4 border-bottom pb-2 border-dark">
+                <RouterLink to="/mie-competizioni" class="btn btn-sm btn-outline-secondary mb-2"><div class="my-1 text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-left-square-fill text-primary" viewBox="0 0 16 16">
+                                <path d="M16 14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2zm-4.5-6.5H5.707l2.147-2.146a.5.5 0 1 0-.708-.708l-3 3a.5.5 0 0 0 0 .708l3 3a.5.5 0 0 0 .708-.708L5.707 8.5H11.5a.5.5 0 0 0 0-1"/>
+                            </svg> Torna alle Competizioni</div>
+                        </RouterLink>
+                <h1 class="fw-bold"><div class="my-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-calendar3" viewBox="0 0 16 16">
+                    <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2M1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857z"/>
+                    <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2m3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+                </svg> Calendario: {{ competizione.nome }}</div></h1>
             </div>
 
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="card shadow-sm border-warning sticky-top" style="top: 100px; z-index: 1;">
                         <div class="card-header bg-warning text-dark fw-bold">
-                            ➕ Programma Partita
+                            <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-plus mb-1" viewBox="0 0 16 16">
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                            </svg> Programma Partita
                         </div>
                         <div class="card-body">
                             <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
@@ -326,7 +336,9 @@ onMounted(() => {
                                     <div v-if="!partita.isEditing">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div class="text-muted small w-25">
-                                                🕑 {{ formattaData(partita.data_ora) }} <br>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-fill" viewBox="0 0 16 16">
+                                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+                                                </svg> {{ formattaData(partita.data_ora) }} <br>
                                                 <span :class="{'text-success': partita.stato === 'finita', 'text-danger': partita.stato === 'in_corso', 'text-secondary': partita.stato === 'programmata'}">
                                                     {{ partita.stato.toUpperCase() }}
                                                 </span>
@@ -340,8 +352,13 @@ onMounted(() => {
                                             </div>
 
                                             <div class="w-25 text-end">
-                                                <button @click="apriModifica(partita)" class="btn btn-sm btn-outline-primary me-2">✏️ Risultato</button>
-                                                <button @click="eliminaPartita(partita.id)" class="btn btn-sm btn-outline-danger">🗑️</button>
+                                                <button @click="apriModifica(partita)" class="btn btn-sm btn-outline-primary me-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16">
+                                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/>
+                                                </svg> Risultato</button>
+                                                <button @click="eliminaPartita(partita.id)" class="btn btn-sm btn-outline-danger">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                                                        <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                                                    </svg></button>
                                             </div>
                                         </div>
 
@@ -373,7 +390,7 @@ onMounted(() => {
                                                 <div class="d-flex justify-content-center align-items-center">
                                                     <input type="number" class="form-control text-center w-50 me-2" v-model="partita.gol_casa" min="0">
                                                     <span>-</span>
-                                                    <input type="number" class="form-control text-center w-50 me-2" v-model="partita.gol_trasferta" min="0">
+                                                    <input type="number" class="form-control text-center w-50 ms-2" v-model="partita.gol_trasferta" min="0">
                                                 </div>
                                             </div>
                                             <div class="col-4 fw-bold">{{ partita.squadra_trasferta?.nome }}</div>
@@ -386,7 +403,7 @@ onMounted(() => {
 
                                             <div class="row g-2 mb-3">
                                                 <div class="col-md-4">
-                                                    <label class="small text-muted fw-semibold">Marcatore *</label>
+                                                    <label class="small text-muted fw-semibold">Marcatore <label class="text-danger">*</label></label>
                                                     <select class="form-select form-select-sm" v-model="partita.marcatoreSelezionato">
                                                         <option value="" selected disabled>Seleziona</option>
                                                         <optgroup :label="partita.squadra_casa?.nome">
@@ -404,7 +421,7 @@ onMounted(() => {
                                                 </div>
 
                                                 <div class="col-md-2">
-                                                    <label class="small text-muted fw-semibold">Minuto *</label>
+                                                    <label class="small text-muted fw-semibold">Minuto <label class="text-danger">*</label></label>
                                                     <input type="number" class="form-control form-control-sm" v-model="partita.minutoSelezionato" min="1" max="120" placeholder="es. 12">
                                                 </div>
 
@@ -458,7 +475,9 @@ onMounted(() => {
                                                         </span>
                                                     </span>
                                                     <button type="button" class="btn btn-sm text-danger" @click="rimuoviMarcatoreTemp(partita, index)">
-                                                        ✖️
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                                                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                                                        </svg>
                                                     </button>
                                                 </li>
                                             </ul>

@@ -45,8 +45,13 @@ onMounted(() => {
                 <div v-else-if="utente" class="card shadow border-0 rounded-4">
                     <div class="card-header bg-dark text-white text-center py-4 rounded-top-4">
                         <h2 class="mb-0">
-                            👤 Profilo di {{ utente.username }}
-                            <span v-if="utente.ruolo === 'premium'" title="Utente Premium">⭐</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-person me-2 mb-2" viewBox="0 0 16 16">
+                                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                            </svg> Profilo di {{ utente.username }}
+                            <span v-if="utente.ruolo === 'premium'" title="Utente Premium">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-star-fill text-warning ms-2 mb-2" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                </svg>
+                            </span>
                         </h2>
                     </div>
 
@@ -68,7 +73,8 @@ onMounted(() => {
 
                         <!-- Sezione Upgrade (solo per utenti base) -->
                         <div v-if="utente.ruolo === 'base'" class="text-center bg-light p-4 rounded-3 border border-warning">
-                            <h4 class="text-warning fw-bold">Passa a Premium! ⭐</h4>
+                            <h4 class="text-warning fw-bold">Passa a Premium! <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-star-fill text-warning ms-2 mb-2" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                </svg></h4>
                             <p>Diventa un utente premium: Potrai creare le tue competizioni e aggiungere le tue squadre personalizzate.</p>
                             <button class="btn btn-warning fw-bold text-dark">Fai l'Upgrade ora</button>
                             <p class="text-muted mt-2 small">(Funzionalità in arrivo...)</p>
