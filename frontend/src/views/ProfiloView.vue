@@ -54,6 +54,12 @@ const simulaPagamento = async () => {
                 const modalInstance = Modal.getInstance(modalElement);
                 if (modalInstance) modalInstance.hide();
 
+                // 5. Lancia un evento GLOBALE (con payload) per avvisare la Navbar di aggiornarsi (checkSession())
+                const updateEvent = new CustomEvent('session-updated', { 
+                    detail: { nuovoRuolo: 'premium' } 
+                });
+                window.dispatchEvent(updateEvent);
+
                 // Pulizia DOM (come fatto nella Navbar per il popup)
                 document.body.classList.remove('modal-open');
                 document.body.style.overflow = '';
@@ -61,7 +67,8 @@ const simulaPagamento = async () => {
                 const backdrops = document.querySelectorAll('.modal-backdrop');
                 backdrops.forEach(b => b.remove());
 
-                // 5. Toast di successo
+
+                // 6. Toast di successo
                 showToast("Pagamento confermato! Benvenuto nel Piano Premium ⭐", "success");
             } else {
                 showToast(data.error, "danger");
@@ -120,11 +127,18 @@ onMounted(() => {
                         <hr class="my-4">
 
                         <!-- Sezione Upgrade (solo per utenti base) -->
-                        <div v-if="utente.ruolo === 'base'" class="text-center bg-light p-4 rounded-3 border border-warning">
-                            <h4 class="text-warning fw-bold">Passa a Premium! ⭐</h4>
-                            <p>Diventa un utente premium: Potrai creare le tue competizioni e aggiungere le tue squadre personalizzate.</p>
-                            <button class="btn btn-warning fw-bold text-dark">Fai l'Upgrade ora</button>
-                            <p class="text-muted mt-2 small">(Funzionalità in arrivo...)</p>
+                        <div v-if="utente.ruolo === 'base'" class="text-center bg-light p-4 rounded-3 border border-warning shadow-sm">
+                            <h4 class="text-warning fw-bold">
+                                Passa a Premium! <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-star-fill text-warning ms-2 mb-2" viewBox="0 0 16 16"><path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                                </svg>
+                            </h4>
+                            <p class="mb-4">
+                                Diventa un utente premium e sblocca il pieno potenziale di TOPKICK. Crea le tue competizioni, gestisci le tue squadre, aggiungi giocatori e aggiorna i risultati in tempo reale!
+                            </p>
+                            <!--Bottone che apre il Modal di Pagamento-->
+                            <button class="btn btn-warning btn-ln fw-bold text-dark px-5 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                Fai l'Upgrade a soli 2.99€/mese
+                            </button>
                         </div>
 
                         <!-- Sezione Gestione (solo per utenti premium) -->
