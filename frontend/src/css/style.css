@@ -229,8 +229,15 @@
     backdrop-filter: blur(5px);
     background-color: rgba(0, 0, 0, 0.6);
 }
+
 .modal-backdrop.show {
     opacity: 1;
+}
+
+/* Regola per bloccare lo scroll del body solo quando la modale Vue è visibile.
+    Usiamo il selettore globale :global() per colpire il body dall'interno di uno style scoped */
+:global(body:has(.modal.show.d-block)) {
+    overflow: hidden;
 }
 /* Animazione custom per il toast */
 .toast-fade-enter-active,
