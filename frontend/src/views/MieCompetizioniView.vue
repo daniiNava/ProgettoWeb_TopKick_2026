@@ -104,8 +104,12 @@ onMounted(() => {
 
 <template>
     <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-success">
-            <h1 class="fw-bold">⭐ Le Mie Competizioni</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 border-dark">
+            <h1 class="fw-bold">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-star-fill text-warning ms-2 mb-2" viewBox="0 0 16 16">
+                    <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                </svg> Le Mie Competizioni
+            </h1>
         </div>
 
         <div class="row g-4">
@@ -114,14 +118,16 @@ onMounted(() => {
             <div class="col-lg-4">
                 <div class="card shadow-sm border-success">
                     <div class="card-header bg-success text-white fw-bold">
-                        ➕ Crea Nuova Competizione
+                        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="currentColor" class="bi bi-plus mb-1" viewBox="0 0 16 16">
+                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                        </svg> Crea Nuova Competizione
                     </div>
                     <div class="card-body">
                         <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
                         <form @submit.prevent="creaCompetizione" enctype="multipart/form-data">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Nome Competizione *</label>
+                                <label class="form-label fw-semibold">Nome Competizione <label class="text-danger">*</label></label>
                                 <input type="text" class="form-control" v-model="nuovoNome" required placeholder="Es. Torneo della Sapienza">
                             </div>
 
@@ -132,7 +138,7 @@ onMounted(() => {
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label fw-semibold">Numero Squadre *</label>
+                                <label class="form-label fw-semibold">Numero Squadre <label class="text-danger">*</label></label>
                                 <input type="number" class="form-control" v-model="nuovoNumeroSquadre" min="2" max="20" required >
                             </div>
                             <button type="submit" class="btn btn-success w-100 fw-bold">Crea la tua nuova Competizione</button>
@@ -170,7 +176,11 @@ onMounted(() => {
                                             Gestisci calendario
                                         </RouterLink>
                                     </div>
-                                    <button @click="eliminaCompetizione(comp.id)" class="btn btn-outline-danger btn-sm" title="Elimina">🗑️</button>
+                                    <button @click="eliminaCompetizione(comp.id)" class="btn btn-outline-danger btn-sm" title="Elimina">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>

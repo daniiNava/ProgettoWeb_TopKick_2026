@@ -129,7 +129,7 @@ onMounted(() => fetchDatiGiocatore())
       </div>
 
       <div class="border-bottom mb-4 flashscore-tabs-container">
-        <ul class="nav nav-tabs border-0 gap-4 mb-0">
+        <ul class="nav nav-tabs gap-4 mb-0">
           <li class="nav-item">
             <button class="nav-link text-uppercase fw-bold pb-3 px-0 border-0 bg-transparent"
                :class="{ 'active-tab text-dark': activeTab === 'riepilogo', 'text-muted': activeTab !== 'riepilogo' }" 
