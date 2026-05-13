@@ -8,6 +8,7 @@ const partite = ref([])
 // Impostazione della data odierna
 const dataSelezionata = ref(new Date().toISOString().split('T')[0])
 const offsetGiorni = ref(0) 
+const caricamento = ref(true)
 
 // --- LOGICA CAROSELLO NOTIZIE 3D ---
 const indiceNewsAttiva = ref(0)
@@ -68,20 +69,26 @@ const gestisciCambioCalendario = () => {
 
 // --- ACQUISIZIONE DATI ---
 const fetchNotizie = async() => {   
+    caricamento.value = true;
     try{
         const response = await fetch('/api/notizie/recenti')
         if(response.ok) notizie.value = await response.json()       
     } catch(error) {
         console.error("Errore nel caricamento delle notizie:", error)
+    }finally { 
+    caricamento.value = false;
     }
 }
 
 const fetchPartite = async() => {
+    caricamento.value = true;
     try{
         const response = await fetch(`/api/partite?data=${dataSelezionata.value}`)
         if(response.ok) partite.value = await response.json()
     } catch(error) {
         console.error("Errore nel caricamento delle partite:", error)
+    }finally { 
+    caricamento.value = false;
     }
 }
 
@@ -113,12 +120,13 @@ onMounted(() => {
 
 <template>
     <div class="container py-4">
-
         <section class="mb-5">
             <div class="d-flex justify-content-between align-items-end mb-4 border-start border-4 border-success ps-3">
                 <h2 class="fw-bold mb-0">Ultime Notizie</h2>
             </div>
-            
+            <div v-if="caricamento" class="text-center my-5">
+                <div class="spinner-border text-success" role="status"></div>
+            </div>
             <div v-if="notizie.length > 0" class="coverflow-container my-4">
                 <div v-for="(notizia, index) in notizie" :key="'news'+notizia.id"
                      class="coverflow-item shadow-lg"
@@ -149,13 +157,12 @@ onMounted(() => {
 
                 </div>
             </div>
-            <div v-else class="alert alert-info">Nessuna notizia disponibile al momento</div>
+            <div v-else v-if="!caricamento" class="alert alert-info">Nessuna notizia disponibile al momento</div>
         </section>
 
          <section>
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <h2 class="fw-bold mb-0 border-start border-4 border-success ps-3">Partite</h2>
-                
                 <div class="d-flex align-items-center bg-light p-1 rounded-pill shadow-sm w-auto">
                     
                     <button @click="scorriDate(-1)" class="btn rounded-circle btn-light border d-flex align-items-center justify-content-center text-secondary shadow-sm" style="width: 38px; height: 38px;">
@@ -184,7 +191,9 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
+            <div v-if="caricamento" class="text-center my-5">
+                <div class="spinner-border text-success" role="status"></div>
+            </div>
             <div v-if="Object.keys(partiteRaggruppate).length > 0">
                 <div v-for="(listaPartite, campionato) in partiteRaggruppate" :key="campionato" class="mb-5"> 
                     
@@ -240,7 +249,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div v-else class="text-center py-5 bg-light rounded-4 border shadow-sm mt-3">
+            <div v-else v-if="!caricamento" class="text-center py-5 bg-light rounded-4 border shadow-sm mt-3">
                 <span class="fs-1 d-block mb-3">🏟️</span>
                 <h4 class="fw-bold text-secondary">Nessuna partita in programma</h4>
                 <p class="text-muted">Non ci sono match registrati per il giorno selezionato.</p>

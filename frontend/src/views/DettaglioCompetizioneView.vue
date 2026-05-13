@@ -16,7 +16,7 @@ const activeTab = ref('classifica')
 
 // Gestione utente e preferiti
 const utenteLoggato = ref(null)
-const isPreferito = ref(false)
+const isPreferita = ref(false)
 
 // Filtri annata
 const annataSelezionata = ref(route.query.annata || '25/26');
@@ -54,7 +54,7 @@ const checkSession = async () => {
       await checkSePreferito() 
     } else {
       utenteLoggato.value = null
-      isPreferito.value = false
+      isPreferita.value = false
     }
   } catch (error) {
     console.error("Errore sessione: ", error)
@@ -66,7 +66,9 @@ const checkSePreferito = async () => {
     const response = await fetch('/api/preferiti')
     if (response.ok) {
       const data = await response.json()
-      isPreferito.value = data.competizioni.some(c => c.id === idCompetizione)
+
+      // Controllo se l'ID di questa competizione è nell'array dei preferiti
+      isPreferita.value = data.competizioni.some(c => c.id === idCompetizione)
     }
   } catch (error) {
     console.error("Errore controllo preferiti: ", error)
@@ -79,10 +81,11 @@ const togglePreferito = async () => {
     return
   }
   try {
-    if (isPreferito.value){   
+    if (isPreferita.value){   // Se la stellina è piena, significa che se viene premuta è per levare tra i preferiti la competizione
+      // Rimuovi dai preferiti
       const response = await fetch(`/api/preferiti/competizioni/${idCompetizione}`, { method: 'DELETE' })
       if(response.ok){
-        isPreferito.value = false
+        isPreferita.value = false
         showToast("Competizione rimossa dai preferiti", "info")
       }
     } else {
@@ -92,7 +95,7 @@ const togglePreferito = async () => {
         body: JSON.stringify({ id_competizione: idCompetizione })
       })
       if (response.ok) {
-        isPreferito.value = true
+        isPreferita.value = true
         showToast("Competizione aggiunta ai preferiti!", "success")
       }
     }
@@ -318,12 +321,13 @@ onMounted(() => {
             <span class="me-3">{{ competizione.nome }}</span>
             
             <span
-                class="fs-3 user-select-none text-warning" 
+                class="fs-3 user-select-none"
+                :class="isPreferita ?  'text-warning' : 'text-secondary'"  
                 style="cursor: pointer; transition: transform 0.2s; display: inline-block;" 
                 @click="togglePreferito"
-                :title="isPreferito ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
+                :title="isPreferita ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'"
               >
-              {{ isPreferito ? '★' : '☆' }}
+              {{ isPreferita ? '★' : '☆' }}
           </span>
           </h1>
           <p class="text-muted mb-0 fs-5">{{ competizione.nazione || 'Internazionale' }}</p>

@@ -77,7 +77,7 @@ onMounted(() => {
     <div class="container py-5">
 
         <h1 class="fw-bold mb-4 border-bottom pb-2 border-warning">
-            <i class="bi bi-star-fill text-warning"></i>I Miei Preferiti
+            ★ I Miei Preferiti
         </h1>
 
         <div v-if="caricamento" class="text-center my-5">
@@ -96,17 +96,17 @@ onMounted(() => {
             <div v-if="competizioni.length > 0" class="mb-5">
                 <h3 class="fw-bold mb-3 text-secondary">Competizioni</h3>
                 <div class="row g-3">
-                    <div v-for="comp in competizioni" :key="comp.id" class="col-12 col-md-6 col-lg-4">
+                    <div v-for="comp in competizioni" :key="comp.id" class="col-auto">
                         <div class="card h-100 shadow-sm border-0 hover-card">
                             <div class="card-body d-flex align-items-center justify-content-between">
                                 <!-- Cliccando l'area sinistra si va al dettaglio -->
                                 <div class="d-flex align-items-center flex-grow-1" style="cursor: pointer;" @click="router.push(`/competizioni/${comp.id}`)">
-                                    <img :src="comp.logo_url || 'https://via.placeholder.com/50'" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                    <h5 class="card-title fw-bold mb-0 text-truncate">{{ comp.nome }}</h5>
+                                <img :src="comp.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid" style="max-height: 80px; width: auto; object-fit: contain;">
+                                    <h3 class="card-title fw-bold mb-0 text-truncate">{{ comp.nome }}</h3>
                                 </div>
                                 <!-- Bottone per rimuovere -->
-                                <button @click.stop="rimuoviCompetizione(comp.id)" class="btn btn-link text-warning fs-4 p-0 ms-2" title="Rimuovi dai preferiti"> <!--".stop" per evitare l'effetto bubbling (ovvero evitare che cliccando la stellina si attivi anche il click della card che porta alla pagina di dettaglio)-->
-                                    <i class="bi bi-star-fill"></i>
+                                <button @click.stop="rimuoviCompetizione(comp.id)" class="btn text-warning fs-4 p-0 ms-2" title="Rimuovi dai preferiti"> <!--".stop" per evitare l'effetto bubbling (ovvero evitare che cliccando la stellina si attivi anche il click della card che porta alla pagina di dettaglio)-->
+                                    ★
                                 </button>
                             </div>
                         </div>
@@ -118,15 +118,15 @@ onMounted(() => {
             <div v-if="squadre.length > 0">
                 <h3 class="fw-bold mb-3 text-secondary">Squadre</h3>
                 <div class="row g-3">
-                    <div v-for="squadra in squadre" :key="squadra.id" class="col-12 col-md-6 col-lg-4">
+                    <div v-for="squadra in squadre" :key="squadra.id" class="col-auto">
                         <div class="card h-100 shadow-sm border-0 hover-card">
                             <div class="card-body d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center flex-grow-1" style="cursor: pointer;" @click="router.push(`/squadre/${squadra.id}`)">
-                                    <img :src="squadra.logo_url || 'https://via.placeholder.com/50'" class="rounded-circle me-3 shadow-sm" style="width: 50px; height: 50px; object-fit: cover; background: white;">
-                                    <h5 class="card-title fw-bold mb-0 text-truncate">{{ squadra.nome }}</h5>
+                                <img :src="squadra.logo_url || 'https://via.placeholder.com/100'" class="me-md-4 img-fluid rounded" style="width: 80px; height: 80px; object-fit: contain;">                                    
+                                <h3 class="card-title fw-bold mb-0 text-truncate">{{ squadra.nome }}</h3>
                                 </div>
-                                <button @click.stop="rimuoviSquadra(squadra.id)" class="btn btn-link text-warning fs-4 p-0 ms-2" title="Rimuovi dai preferiti">
-                                    <i class="bi bi-star-fill"></i>
+                                <button @click.stop="rimuoviSquadra(squadra.id)" class="btn text-warning fs-4 p-0 ms-2" title="Rimuovi dai preferiti">
+                                    ★
                                 </button>
                             </div>
                         </div>
