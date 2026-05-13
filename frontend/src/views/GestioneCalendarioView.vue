@@ -213,6 +213,24 @@ const rimuoviMarcatoreTemp = (partita, index) => {
 
 // Salva definitivamente il risultato e i marcatori nel DB
 const aggiornaRisultato = async (partita) => {
+    // 1. Contiamo quanti marcatori temporanei ci sono per Casa e Trasferta
+    const numMarcatoriCasa = partita.marcatoriTemp.filter(m => m.id_squadra === partita.id_squadra_casa).length;
+    const numMarcatoriTrasferta = partita.marcatoriTemp.filter(m => m.id_squadra === partita.id_squadra_trasferta).length;
+
+    // 2. Prendiamo i gol scritti negli input (assicurandoci che siano numeri)
+    const golCasaFissi = parseInt(partita.gol_casa) || 0;
+    const golTrasfertaFissi = parseInt(partita.gol_trasferta) || 0;
+
+    // 3. Verifichiamo le incongruenze
+    if (numMarcatoriCasa > golCasaFissi) {
+        showToast(`Attenzione: Hai inserito ${numMarcatoriCasa} marcatori locali, ma il risultato indica solo ${golCasaFissi} gol.`, 'danger');
+        return; // Blocca l'esecuzione, non fa partire la fetch!
+    }
+
+    if (numMarcatoriTrasferta > golTrasfertaFissi) {
+        showToast(`Attenzione: Hai inserito ${numMarcatoriTrasferta} marcatori ospiti, ma il risultato indica solo ${golTrasfertaFissi} gol.`, 'danger');
+        return; // Blocca l'esecuzione
+    }
     try {
         const response = await fetch(`/api/partite/${partita.id}`, {
             method: 'PUT', 

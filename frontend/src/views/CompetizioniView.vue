@@ -18,6 +18,7 @@ const fetchDati = async () => {
       const data = await response.json()
       competizioni.value = data.competizioni
       partite.value = data.partite
+      annateDisponibili.value=data.annate_disponibili
     }
   } catch (error) {
     console.error("Errore:", error)

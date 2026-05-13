@@ -13,7 +13,7 @@ const fetchNotizia= async () => {
     try{
         const response= await fetch(`/api/notizie/${route.params.id}`)
         if(!response.ok) {
-            if(response.status===404) throw new Error ('Notizia non torovata')
+            if(response.status===404) throw new Error ('Notizia non trovata')
             throw new Error('Errore nel caricamento della notizia')
         }
         notizia.value= await response.json()
