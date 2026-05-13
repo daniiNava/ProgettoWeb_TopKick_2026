@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const supabase = require('../config/supabase');
+const { checkAuth } = require('../middlewares/controlli');
 
 // Api per la REGISTRAZIONE
 router.post('/register', async (req, res) => {
@@ -111,6 +112,30 @@ router.post('/logout', async (req, res) => {
         res.clearCookie('connect.sid'); // Cancellazione del cookie lato Client
         res.json({ message: "Logout effettuato con successo" });
     });
+});
+
+// =================================
+// API Upgrade Utente Base->Premium
+// =================================
+
+router.post('/upgrade', checkAuth, async(req, res) => {
+    const userId = req.session.user.id;
+    try{
+        // 1. Aggiornamento del ruolo nel database
+        const { error } = await supabase
+            .from('utenti')
+            .update({ ruolo: 'premium' })
+            .eq('id', userId);
+        if(error) throw error;
+
+        // 2. Aggiornamento del ruolo ANCHE nella SESSIONE CORRENTE (Senza dover far fare logout e login per far vedere gli aggionrmanenti all'utente)
+        req.session.user.ruolo = 'premium';
+
+        res.json({ message:"Upgrade completato con successo! Ora sei un utente Premium." })
+    } catch (err) {
+        console.error("Errore durante l'upgrade", err);
+        res.status(500).json({ error: "Errore interno del server durante l'upgrade dell'utente" });
+    }
 });
 
 module.exports = router;
