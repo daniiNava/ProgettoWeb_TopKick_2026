@@ -8,7 +8,6 @@ import 'bootstrap';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import './css/style.css'
 
-// IMPORTAZIONE foglio di stile bootstrap icons
 const app = createApp(App)
 
 app.use(router)

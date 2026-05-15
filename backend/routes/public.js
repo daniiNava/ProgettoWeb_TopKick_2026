@@ -85,7 +85,7 @@ router.get('/notizie/:id', async (req, res) => {
     try {
         const {data, error} = await supabase 
             .from('notizie')
-            .select(`id, titolo, contenuto, img_url, data_pubblicazione, competizioni(nome)`)
+            .select('id, titolo, contenuto, img_url, data_pubblicazione, competizioni(nome)')
             .eq('id', id)
             .single(); 
         if(error) throw error;
@@ -138,12 +138,15 @@ router.get('/ricerca', async (req, res) => {
     }
 });
 
-// --- DETTAGLI ---
+// --- COMPETIZIONI ---
 
 router.get('/competizioni', async (req, res) => {
-    const annataRichiesta = req.query.annata || '25/26';
+    const annataRichiesta = req.query.annata || '25/26'; // Prende l'annata di riferimento dall'URL altrimenti usa di default 25/26
     try {
+        // 1. Estrae l'elenco di tutti i campionati in ordine alfabetico
         const { data: competizioni } = await supabase.from('competizioni').select('*').order('nome', { ascending: true });
+
+        // 2. Estrae tutte le partite finite di quell'annata usando la funzione getAllData()
         const { data: partite } = await getAllData(supabase.from('partite')
             .select(`
                 id_competizione, gol_casa, gol_trasferta,
@@ -153,9 +156,11 @@ router.get('/competizioni', async (req, res) => {
             .eq('stato', 'finita')
             .eq('annata', annataRichiesta));
 
+        // 3. Estrae le annate della competizione per popolare il filtro a tendina nel frontend        
         const { data: annateData } = await supabase.from('partite').select('annata');
         let annateDisponibili = annateData ? [...new Set(annateData.map(p => p.annata))].sort().reverse() : ['25/26'];
-        
+
+        // 4. Invia al frontend
         res.json({ competizioni: competizioni || [], partite: partite || [], annate_disponibili: annateDisponibili });
     } catch (err) {
         console.error("Errore competizioni:", err);
@@ -165,14 +170,19 @@ router.get('/competizioni', async (req, res) => {
 
 router.get('/competizioni/:id/dettagli', async (req, res) => {
     const idCompetizione = req.params.id;
-    const annataRichiesta = req.query.annata || '25/26';
+    const annataRichiesta = req.query.annata || '25/26'; // Prende l'annata di riferimento dall'URL altrimenti usa di default 25/26
 
     try {
+        // 1. Estrae i dati base della competizione
         const { data: competizione } = await supabase.from('competizioni').select('*').eq('id', idCompetizione).single();
+
+        // 2. Estrae tutte le partite di quella competizione per quell'annata
         const { data: partite } = await supabase.from('partite').select(`
-            *, squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+            *, squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), 
+            squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
         `).eq('id_competizione', idCompetizione).eq('annata', annataRichiesta);
 
+        // 3. Estrae i marcatori grezzi usando una INNER JOIN per filtrare solo i gol di questa competizione
         const { data: marcatoriRaw } = await supabase.from('marcatori').select(`
                 id, id_partita, minuto, tipo_gol,
                 marcatore_originale:id_giocatore(id, nome_cognome, id_squadra), 
@@ -181,21 +191,25 @@ router.get('/competizioni/:id/dettagli', async (req, res) => {
             `)
             .eq('partita.id_competizione', idCompetizione)
             .eq('partita.annata', annataRichiesta);
-
+            
+        // 4. Estrae un array univoco con i nomi di tutti i giocatori che hanno segnato o fatto assist
         const nomiGiocatori = [...new Set([
             ...(marcatoriRaw?.map(m => m.marcatore_originale?.nome_cognome) || []),
             ...(marcatoriRaw?.map(m => m.assistman_originale?.nome_cognome) || [])
         ].filter(Boolean))];
 
+        // 5. Cerca nel DB i dati di questi giocatori relativi all'annata richiesta
         const { data: giocatoriAnnata } = await supabase.from('giocatori')
             .select(`id, nome_cognome, annata, id_squadra, squadra:squadre!inner(id, nome, id_competizione)`)
             .in('nome_cognome', nomiGiocatori)
             .eq('annata', annataRichiesta)
             .eq('squadra.id_competizione', idCompetizione);
 
+        // 6. Crea un dizionario per accesso rapido O(1) ai dati del giocatore
         const mappaGiocatori = {};
-        giocatoriAnnata?.forEach(g => { mappaGiocatori[`${g.nome_cognome}|${g.id_squadra}`] = g; });
+        giocatoriAnnata?.forEach(g => { mappaGiocatori['${g.nome_cognome}|${g.id_squadra}'] = g; });
 
+        // 7. Ricostruisce l'array dei marcatori unendo i dati grezzi con i dati aggiornati della mappa
         const marcatoriRisolti = (marcatoriRaw || []).map(m => {
             const marcatoreObj = m.marcatore_originale;
             const assistmanObj = m.assistman_originale;
@@ -209,6 +223,7 @@ router.get('/competizioni/:id/dettagli', async (req, res) => {
             };
         });
 
+        // 8. Estrae le notizie
         const {data : notizie} = await supabase.from('notizie').select(`id, titolo, contenuto, img_url, data_pubblicazione, id_competizione`).eq('id_competizione', idCompetizione);
         
         res.json({ competizione, partite: partite || [], marcatori: marcatoriRisolti, notizie });
@@ -218,60 +233,107 @@ router.get('/competizioni/:id/dettagli', async (req, res) => {
     }
 });
 
+// --- SQUADRE ---
+
 router.get('/squadre/:id/dettagli', async (req, res) => {
     const idSquadra = req.params.id;
-    const annataRichiesta = req.query.annata || '25/26'; 
-    console.log("CHIAMATA API DETTAGLI - ID SQUADRA RICEVUTO:", idSquadra);
+    const annataRichiesta = req.query.annata || '25/26'; // Prende l'annata di riferimento dall'URL altrimenti usa di default 25/26
     
     try {
-        const { data: squadra, error: sqError } = await supabase.from('squadre').select(`id, nome, logo_url, id_competizione, competizioni ( id, nome )`).eq('id', idSquadra).single();
+        // 1. Estrae i dati della squadra e il nome della competizione a cui partecipa (tramite JOIN implicita)
+        const { data: squadra, error: sqError } = await supabase.from('squadre')
+            .select(`id, nome, logo_url, id_competizione, competizioni ( id, nome )`)
+            .eq('id', idSquadra)
+            .single();
         if (sqError || !squadra) return res.status(404).json({ error: "Squadra non trovata" });
 
-        const { data: giocatori } = await supabase.from('giocatori').select('*').eq('id_squadra', idSquadra).eq('annata', annataRichiesta).order('ruolo', { ascending: true });
-        const { data: partite } = await supabase.from('partite').select(`*, squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)`).or(`id_squadra_casa.eq.${idSquadra},id_squadra_trasferta.eq.${idSquadra}`).eq('annata', annataRichiesta).order('data_ora', { ascending: false });
+        // 2. Estrae la rosa dei giocatori della squadra nell'annata, ordinati per ruolo
+        const { data: giocatori } = await supabase.from('giocatori')
+            .select('*')
+            .eq('id_squadra', idSquadra).eq('annata', annataRichiesta)
+            .order('ruolo', { ascending: true });
+        
+        // 3. Estrae tutte le partite giocate da questa squadra in quell'annata
+        const { data: partite } = await supabase.from('partite')
+            .select(`*,
+                squadra_casa:squadre!id_squadra_casa(id, nome, logo_url),
+                squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+            `)
+            .or(`id_squadra_casa.eq.${idSquadra},id_squadra_trasferta.eq.${idSquadra}`)
+            .eq('annata', annataRichiesta)
+            .order('data_ora', { ascending: false });
 
         let marcatori = [];
         if (partite && partite.length > 0) {
-            const { data: marcatoriData } = await supabase.from('marcatori').select(`*, giocatore:giocatori!id_giocatore(id, nome_cognome, id_squadra)`).in('id_partita', partite.map(p => p.id));
+            // 4. Se ci sono partite, estrae tutti i marcatori di quelle specifiche partite
+            const { data: marcatoriData } = await supabase.from('marcatori').select(`
+                *, 
+                giocatore:giocatori!id_giocatore(id, nome_cognome, id_squadra)
+                `).in('id_partita', partite.map(p => p.id));
             marcatori = marcatoriData || [];
         }
 
-        const { data: partiteCompetizione } = await supabase.from('partite').select(`id_squadra_casa, id_squadra_trasferta, gol_casa, gol_trasferta, squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)`).eq('id_competizione', squadra.id_competizione).eq('stato', 'finita').eq('annata', annataRichiesta);
-        const { data: notizie } = await supabase.from('notizie').select('*').eq('id_competizione', squadra.id_competizione).order('data_pubblicazione', { ascending: false }).limit(5);
-        const { data: annateData } = await supabase.from('giocatori').select('annata').eq('id_squadra', squadra.id);
+        // 5. Estrae tutte le partite finite del campionato di appartenenza (Serve al frontend per calcolare la classifica)
+        const { data: partiteCompetizione } = await supabase.from('partite')
+            .select(`
+                id_squadra_casa, id_squadra_trasferta, gol_casa, gol_trasferta, 
+                squadra_casa:squadre!id_squadra_casa(id, nome, logo_url), 
+                squadra_trasferta:squadre!id_squadra_trasferta(id, nome, logo_url)
+                `)
+            .eq('id_competizione', squadra.id_competizione)
+            .eq('stato', 'finita')
+            .eq('annata', annataRichiesta);
         
-        let annateDisponibili = annateData ? [...new Set(annateData.map(p => p.annata))].sort().reverse() : ['25/26'];
+        // 6. Estrae le ultime 5 notizie relative al campionato di appartenenza
+        const { data: notizie } = await supabase.from('notizie')
+            .select('*')
+            .eq('id_competizione', squadra.id_competizione)
+            .order('data_pubblicazione', { ascending: false })
+            .limit(5);
+        
+        // 7. Cerca nel DB quali annate esistono per questa squadra (per popolare la tendina del filtro anni)
+        const { data: annateData } = await supabase.from('giocatori')
+            .select('annata')
+            .eq('id_squadra', squadra.id);
+        let annateDisponibili = annateData ? [...new Set(annateData.map(p => p.annata))].sort().reverse() : ['25/26']; // Usa Set per rimuovere i duplicati
 
+        // 8. Invia al frontend
         res.json({ squadra, giocatori: giocatori || [], partite: partite || [], marcatori, partite_competizione: partiteCompetizione || [], notizie: notizie || [], annate_disponibili: annateDisponibili });
     } catch (err) {
-        console.error("Errore dettaglio squadra:", err);
         res.status(500).json({ error: "Errore interno del server" });
     }
 });
 
+// --- GIOCATORI ---
+
 router.get('/giocatori/dettaglio/:identifier', async (req, res) => {
-    const rawIdentifier = req.params.identifier;
+    const rawIdentifier = req.params.identifier; // Può essere un ID numerico o un Nome testuale
     if (!rawIdentifier || rawIdentifier === 'undefined') {
         console.log("❌ Bloccata richiesta con parametro undefined o vuoto");
         return res.status(400).json({ message: "URL non valido (parametro mancante)" });
     }
 
-    let nomeCercato = decodeURIComponent(rawIdentifier).trim();
+    let nomeCercato = decodeURIComponent(rawIdentifier).trim(); // Pulisce la stringa
     console.log(`\n--- CERCO GIOCATORE: ${nomeCercato} ---`);
 
     try {
+        // 1. Se l'identificatore è un numero, fa una query per scoprire il nome testuale associato
         if (!isNaN(nomeCercato) && nomeCercato !== '') {
-            const { data: p, error: errId } = await supabase.from('giocatori').select('nome_cognome').eq('id', nomeCercato).single();
-            if (errId) console.error("Errore ricerca ID:", errId);
-            if (p) {
-                nomeCercato = p.nome_cognome.trim();
-                console.log("ID riconosciuto. Nome reale dal DB:", nomeCercato);
-            } else {
-                return res.status(404).json({ message: "ID giocatore non trovato" });
-            }
+            const { data: p } = await supabase.from('giocatori')
+                .select('nome_cognome')
+                .eq('id', nomeCercato)
+                .single();
+            if (p) nomeCercato = p.nome_cognome.trim(); // Sovrascrive l'ID con il Nome
         }
 
-        const { data: records, error: pError } = await supabase.from('giocatori').select(`*, squadre (id, nome, logo_url, id_competizione)`).ilike('nome_cognome', `%${nomeCercato}%`).order('annata', { ascending: false });
+        // 2. Cerca tutti i dati del giocatore usando il nome
+        const { data: records, error: pError } = await supabase.from('giocatori')
+            .select(`
+                *, 
+                squadre (id, nome, logo_url, id_competizione)
+            `)
+            .ilike('nome_cognome', `%${nomeCercato}%`)
+            .order('annata', { ascending: false });
         if (pError) {
             console.error("⚠️ ERRORE DATABASE (Tabella giocatori):", pError);
             return res.status(500).json({ message: "Errore query database", errore: pError });
@@ -281,13 +343,18 @@ router.get('/giocatori/dettaglio/:identifier', async (req, res) => {
             return res.status(404).json({ message: "Giocatore non trovato" });
         }
 
-        console.log(`✅ Giocatore trovato! Trovati ${records.length} record in carriera.`);
+        console.log('✅ Giocatore trovato! Trovati ${records.length} record in carriera.');
 
-        const infoAttuali = records[0];
-        const tuttiIdGiocatori = records.map(r => r.id);
-        const { data: marcatori } = await supabase.from('marcatori').select('id_giocatore, id_assistman, gol').or(`id_giocatore.in.(${tuttiIdGiocatori.join(',')}),id_assistman.in.(${tuttiIdGiocatori.join(',')})`);
+        const infoAttuali = records[0]; // Prende il record più recente come info principali
+        const tuttiIdGiocatori = records.map(r => r.id); // Estrae tutti gli ID storici del giocatore
 
+        // 3. Estrae tutti i gol e gli assist fatti da questo giocatore in tutta la carriera
+        const { data: marcatori } = await supabase.from('marcatori')
+            .select(`id_giocatore, id_assistman, gol`)
+            .or(`id_giocatore.in.(${tuttiIdGiocatori.join(',')}),id_assistman.in.(${tuttiIdGiocatori.join(',')})`);
         let totaleGol = 0, totaleAssist = 0;
+
+        // 4. Calcola le statistiche combinando i dati del DB
         const carrieraConStatistiche = records.map(record => {
             const eventiGol = marcatori ? marcatori.filter(m => m.id_giocatore === record.id) : [];
             const eventiAssist = marcatori ? marcatori.filter(m => m.id_assistman === record.id) : [];
@@ -298,10 +365,26 @@ router.get('/giocatori/dettaglio/:identifier', async (req, res) => {
 
         let ultimePartite = [];
         if (infoAttuali.id_squadra) {
-            const { data: partite, error: errPartite } = await supabase.from('partite').select(`id, data_ora, gol_casa, gol_trasferta, stato, squadra_casa:squadre!partite_id_squadra_casa_fkey (id, nome, logo_url), squadra_trasferta:squadre!partite_id_squadra_trasferta_fkey (id, nome, logo_url)`).eq('stato', 'finita').or(`id_squadra_casa.eq.${infoAttuali.id_squadra},id_squadra_trasferta.eq.${infoAttuali.id_squadra}`).order('data_ora', { ascending: false }).limit(50);
+            // 5. Estrae le ultime 50 partite della squadra ATTUALE del giocatore
+            const { data: partite, error: errPartite } = await supabase.from('partite')
+                .select(`
+                    id, data_ora, gol_casa, gol_trasferta, stato, 
+                    squadra_casa:squadre!partite_id_squadra_casa_fkey (id, nome, logo_url), 
+                    squadra_trasferta:squadre!partite_id_squadra_trasferta_fkey (id, nome, logo_url)
+                `)
+                .eq('stato', 'finita')
+                .or(`id_squadra_casa.eq.${infoAttuali.id_squadra},id_squadra_trasferta.eq.${infoAttuali.id_squadra}`)
+                .order('data_ora', { ascending: false }).limit(50);
             if (errPartite) console.error("⚠️ ERRORE DATABASE (Tabella partite):", errPartite);
             if (partite && partite.length > 0) {
-                const { data: marcatoriUltimePartite } = await supabase.from('marcatori').select('id_partita, id_giocatore, id_assistman, gol').in('id_partita', partite.map(p => p.id)).or(`id_giocatore.eq.${infoAttuali.id},id_assistman.eq.${infoAttuali.id}`);
+
+                // 6. Controlla se in quelle 50 partite il giocatore ha segnato o fatto assist
+                const { data: marcatoriUltimePartite } = await supabase.from('marcatori')
+                    .select('id_partita, id_giocatore, id_assistman, gol')
+                    .in('id_partita', partite.map(p => p.id))
+                    .or(`id_giocatore.eq.${infoAttuali.id},id_assistman.eq.${infoAttuali.id}`);
+                
+                // 7. Aggiunge i gol/assist del giocatore all'oggetto della partita
                 ultimePartite = partite.map(partita => {
                     const eventiGolMatch = marcatoriUltimePartite ? marcatoriUltimePartite.filter(m => m.id_partita === partita.id && m.id_giocatore === infoAttuali.id) : [];
                     const eventiAssistMatch = marcatoriUltimePartite ? marcatoriUltimePartite.filter(m => m.id_partita === partita.id && m.id_assistman === infoAttuali.id) : [];
@@ -309,6 +392,7 @@ router.get('/giocatori/dettaglio/:identifier', async (req, res) => {
                 });
             }
         }
+        // 8. Invia al frontend
         res.json({ info: infoAttuali, carriera: carrieraConStatistiche, statistiche: { gol: totaleGol, assist: totaleAssist }, ultime_partite: ultimePartite });
 
     } catch (error) {
