@@ -6,6 +6,7 @@ import router from './router'               // Importa il sistema di navigazione
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import './css/style.css'
 
 const app = createApp(App)                  // Inizializzazione dell'App
 

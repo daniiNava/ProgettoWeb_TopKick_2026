@@ -130,33 +130,3 @@ onMounted(() => {
         </div>
     </div>
 </template>
-
-<style scoped>
-/* Rende l'intera card un elemento interattivo visivamente */
-.news-card {
-    transition: all 0.3s ease;
-    cursor: pointer; /* Fa apparire la manina su tutta la card */
-}
-
-.news-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-}
-
-/* Effetto zoom sull'immagine quando passi sopra la card */
-.news-img {
-    height: 220px;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-}
-
-.news-card:hover .news-img {
-    transform: scale(1.05);
-}
-
-/* Assicura che il pulsante sembri attivo al passaggio del mouse sulla card */
-.news-card:hover .btn-outline-success {
-    background-color: #198754;
-    color: white;
-}
-</style>

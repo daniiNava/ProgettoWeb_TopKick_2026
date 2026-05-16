@@ -214,11 +214,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2"> 
+    <nav class="navbar navbar-expand-xl navbar-dark bg-dark sticky-top py-2"> 
         <div class="container-fluid px-4 d-flex align-items-center">
             
             <!-- LOGO -->
-            <RouterLink class="navbar-brand d-flex align-items-center w-0 w-lg-100 mx-auto" to="/">
+            <RouterLink class="navbar-brand d-flex align-items-center w-0 w-xl-100 mx-auto" to="/">
                 <img 
                     src="/logo.png" 
                     alt="Logo TopKick" 
@@ -228,8 +228,8 @@ onUnmounted(() => {
             </RouterLink>
 
             <!-- RICERCA MOBILE -->
-            <form class="d-flex align-items-center position-relative d-lg-none w-auto" role="search" @submit.prevent="eseguiRicerca"> 
-                <select class="form-select me-2 bg-dark text-white border-secondary" style="width: 40% !important;" v-model="tipoRicerca" @change="cercaLive"> 
+            <form class="d-flex align-items-center justify-content-center position-relative d-xl-none w-100" role="search" @submit.prevent="eseguiRicerca"> 
+                <select class="form-select me-2 bg-dark text-white border-secondary" style="width: 40% !important; max-width: 200px;" v-model="tipoRicerca" @change="cercaLive"> 
                     <option value="tutto">Tutto</option>
                     <option value="squadre">Squadre</option>
                     <option value="giocatori">Giocatori </option>
@@ -237,11 +237,11 @@ onUnmounted(() => {
                     <option value="notizie">Notizie</option>
                 </select>
 
-                <div class="position-relative flex-grow-1">
+                <div class="position-relative w-100" style="width: 40% !important; max-width: 400px;">
                     <input class="form-control me-2 w-100" type="search" placeholder="Cerca..." v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
                     
                     <!-- Tendina suggerimenti Mobile -->
-                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-xl" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
                         <li v-if="suggerimenti.squadre.length>0"><h6 class="dropdown-header text-success">Squadre</h6></li>
                         <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
@@ -272,7 +272,7 @@ onUnmounted(() => {
                         <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
                     </svg>
                 </button>
-                <button class="navbar-toggler border-0 ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </form>
@@ -283,17 +283,17 @@ onUnmounted(() => {
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 <div class="offcanvas-body">
-                    <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row align-items-lg-center">
+                    <ul class="navbar-nav w-100 d-flex flex-column flex-xl-row align-items-xl-center">
                         
-                        <li class="nav-item order-3 order-lg-1 me-lg-3" data-bs-dismiss="offcanvas">
-                            <RouterLink class="nav-link fs-5 ms-lg-3" to="/competizioni">Competizioni</RouterLink>
+                        <li class="nav-item order-3 order-xl-1 me-xl-3" data-bs-dismiss="offcanvas">
+                            <RouterLink class="nav-link fs-5 ms-xl-3" to="/competizioni">Competizioni</RouterLink>
                         </li>
-                        <li class="nav-item order-2 order-lg-2" data-bs-dismiss="offcanvas">
+                        <li class="nav-item order-2 order-xl-2" data-bs-dismiss="offcanvas">
                             <RouterLink class="nav-link fs-5" to="/notizie">Notizie</RouterLink>
                         </li>
 
                         <!-- RICERCA DESKTOP -->
-                        <li class="nav-item order-4 order-lg-3 d-none d-lg-block ms-lg-auto me-lg-3" style="max-width: 370px;">
+                        <li class="nav-item order-4 order-xl-3 d-none d-xl-block ms-xl-auto me-xl-3" style="max-width: 370px;">
                             <form class="d-flex align-items-center position-relative w-100" role="search" @submit.prevent="eseguiRicerca"> 
                                 <select class="form-select me-2 w-auto bg-dark text-white border-secondary" v-model="tipoRicerca" @change="cercaLive"> 
                                     <option value="tutto">Tutto</option>
@@ -307,7 +307,7 @@ onUnmounted(() => {
                                     <input class="form-control w-100" type="search" placeholder="Cerca..." v-model="testoRicerca" @input="cercaLive" required autocomplete="off">
                                     
                                     <!-- Tendina suggerimenti Desktop -->
-                                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-lg" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
+                                    <ul v-if="suggerimenti && (suggerimenti.squadre.length>0 || suggerimenti.giocatori.length>0 || suggerimenti.competizioni.length>0 || suggerimenti.notizie.length>0 )" class="dropdown-menu show position-absolute w-100 mt-1 shadow-xl" style="z-index: 1050; max-height: 300px; overflow-y: auto;">
                                         <li v-if="suggerimenti.squadre.length>0"><h6 class="dropdown-header text-success">Squadre</h6></li>
                                         <li v-for="sq in suggerimenti.squadre.slice(0, 3)" :key="'sq'+sq.id">
                                             <a class="dropdown-item" href="#" @click.prevent="selezionaSuggerimento(sq.nome)"> {{ sq.nome }}</a>
@@ -337,11 +337,11 @@ onUnmounted(() => {
                         </li>
 
                         <!-- ZONA PROFILO / AUTH -->
-                        <li class="nav-item order-1 order-lg-4 mb-3 mb-lg-0">
+                        <li class="nav-item order-1 order-xl-4 mb-3 mb-xl-0">
                             <div class="d-flex align-items-center">
                                 
                                 <!-- UTENTE NON LOGGATO -->
-                                <div v-if="!utenteLoggato" class="d-flex flex-column flex-lg-row gap-2 w-100">
+                                <div v-if="!utenteLoggato" class="d-flex flex-column flex-xl-row gap-2 w-100">
                                     <!-- rimosso data-bs-toggle e target, usiamo solo @click di Vue -->
                                     <button class="btn btn-outline-light fw-bold px-4 text-nowrap" @click="apriPopup(true)" data-bs-dismiss="offcanvas">
                                         Accedi
@@ -414,7 +414,7 @@ onUnmounted(() => {
         <!-- Finestra Modale visibile forzatamente -->
         <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" style="z-index: 1055;"> 
             <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content shadow-lg border-0">
+                <div class="modal-content shadow-xl border-0">
 
                     <div class="modal-header text-white" :class="isLoginMode ? 'bg-success' : 'bg-primary'">
                         <h5 class="modal-title fw-bold">
@@ -482,21 +482,10 @@ onUnmounted(() => {
         </div>
     </div>
 </template>
-
 <style scoped>
-    /* Effetto vetro smerigliato per lo sfondo della modale */
-    .modal-backdrop {
-        backdrop-filter: blur(5px);
-        background-color: rgba(0, 0, 0, 0.6);
-    }
-    
-    .modal-backdrop.show {
-        opacity: 1;
-    }
-
-    /* Regola per bloccare lo scroll del body solo quando la modale Vue è visibile.
-       Usiamo il selettore globale :global() per colpire il body dall'interno di uno style scoped */
-    :global(body:has(.modal.show.d-block)) {
-        overflow: hidden;
-    }
+/* Regola per bloccare lo scroll del body solo quando la modale Vue è visibile.
+    Usiamo il selettore globale :global() per colpire il body dall'interno di uno style scoped */
+:global(body:has(.modal.show.d-block)) {
+    overflow: hidden;
+}
 </style>

@@ -36,19 +36,3 @@ import { toastState, closeToast } from '@/utils/toastStore';
         </transition>
     </div>
 </template>
-
-<style scoped>
-/* Animazione custom per il toast */
-.toast-fade-enter-active,
-.toast-fade-leave-active {
-  transition: all 0.3s ease;
-}
-.toast-fade-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-.toast-fade-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-</style>
