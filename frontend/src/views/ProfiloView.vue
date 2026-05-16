@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { Modal } from 'bootstrap';          // Importazione per chiudere il Modal via JS
 
 const router = useRouter()
-const utente = ref(null)
+const utente = ref(null)                   // (ref=)Variabile dinamica: var. che quando cambia fa ricaricare il componente mostrando il nuovo valore di quella var.
 const caricamento = ref(true)
 
 // Variabili per la simulazione del pagamento

@@ -1,14 +1,13 @@
-import { createApp } from 'vue'     // importa la funzione createApp dal nucleo del framework Vue
-import App from './App.vue'         // importa il componente radice (Root component)
-import router from './router'
+import { createApp } from 'vue'             // Crea l'istanza principale dell'applicazione Vue
+import App from './App.vue'                 // Importa il file di layout principale (Root component)
+import router from './router'               // Importa il sistema di navigazione (Vue Router)
 
-// IMPORTAZIONE DI BOOSTRAP predentemente installato
+// IMPORTAZIONE DI BOOSTRAP (Globale per tutto il sito)
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
-// IMPORTAZIONE foglio di stile bootstrap icons
-const app = createApp(App)
+const app = createApp(App)                  // Inizializzazione dell'App
 
-app.use(router)
-app.mount('#app')
+app.use(router)                             // Inserimento del router nell'App
+app.mount('#app')                           // Inserimento dell'intera App all'intero di "<div id=app>" presente in 'index.html'

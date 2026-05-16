@@ -1,13 +1,13 @@
-import { reactive } from 'vue'
+import { reactive } from 'vue'                      // Importazione della reattività base di Vue
 
-// Oggetto reattivo globale che contiene lo stato del Toast
+// Oggetto reattivo globale che contiene lo stato del Toast 
 export const toastState = reactive({
     visible: false, 
     message: '',
-    theme: 'success'    // Può essere 'success', 'danger', 'warning', 'info'
+    theme: 'success'                                // Può essere 'success', 'danger', 'warning', 'info'
 })
 
-let timeoutId = null;
+let timeoutId = null;                               // Variabile che tiene traccia del timer
 
 // Funzione globale per richiamare il Toast da qualsiasi pagina
 export const showToast = (msg, theme='success') => {

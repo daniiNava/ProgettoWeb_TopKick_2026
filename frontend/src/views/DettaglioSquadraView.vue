@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { showToast } from '@/utils/toastStore'
 
@@ -267,6 +267,11 @@ const formattaData = (dataStringa) => {
 onMounted(() => {
   fetchDettagli()
   checkSession()
+  window.addEventListener('session-updated', checkSession)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('session-updated', checkSession)
 })
 </script>
 

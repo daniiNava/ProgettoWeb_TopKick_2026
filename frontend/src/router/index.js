@@ -43,8 +43,9 @@ const router = createRouter({
     ]
 })
 
+// Navigation Guard 
 router.beforeEach((to, from, next)=> {
-    next();
+    next();     // Fa passsare la richiesta alla pagina successiva
 })
 
 export default router

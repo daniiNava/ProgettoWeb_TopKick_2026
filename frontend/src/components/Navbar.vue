@@ -76,6 +76,8 @@ const handleLogin = async () => {
             loginPassword.value = ''
             errorMessage.value = ''
 
+            window.dispatchEvent(new Event('session-updated'));
+
             showToast(`Benvenuto ${utenteLoggato.value.username}!`, 'success')
         } else {
             errorMessage.value = data.error
@@ -103,6 +105,8 @@ const handleRegister = async () => {
             regEmail.value = ''
             regPassword.value = ''
             errorMessage.value = ''
+
+            window.dispatchEvent(new Event('session-updated'));
             
             showToast("Registrazione completata!", 'success')
         } else {
@@ -119,6 +123,8 @@ const handleLogout = async () => {
         await fetch('/api/logout', { method: 'POST' })
         utenteLoggato.value = null
         isDropdownOpen.value = false // Chiude la tendina
+
+        window.dispatchEvent(new Event('session-updated'));
         
         // Se l'utente era in una pagina protetta, lo rimandiamo alla home
         const pathCorrente = router.currentRoute.value.path;
