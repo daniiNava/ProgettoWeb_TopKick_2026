@@ -346,7 +346,7 @@ onUnmounted(() => {
                                     <button class="btn btn-outline-light fw-bold px-4 text-nowrap" @click="apriPopup(true)" data-bs-dismiss="offcanvas">
                                         Accedi
                                     </button>
-                                    <button class="btn btn-success fw-bold px-4 text-nowrap" @click="apriPopup(false)" data-bs-dismiss="offcanvas">
+                                    <button class="btn btn-primary fw-bold px-4 text-nowrap" @click="apriPopup(false)" data-bs-dismiss="offcanvas">
                                         Iscriviti
                                     </button>
                                 </div>
@@ -458,7 +458,7 @@ onUnmounted(() => {
                                 <label class="form-label fw-semibold">Password (min. 8 caratteri)</label>
                                 <input type="password" class="form-control" v-model="regPassword" minlength="8" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold">Registrati</button>
+                            <button type="submit" class="btn btn-success w-100 fw-bold">Registrati</button>
                         </form>
 
                     </div>
